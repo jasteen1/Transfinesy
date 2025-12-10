@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:include="layout :: layout">
+<head>
+    <style>
+        .time-section {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            background: var(--accent);
+        }
+        .time-section h4 {
+            margin-bottom: var(--spacing-md);
+            color: var(--dark-text);
+            font-size: 1rem;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+    </style>
+</head>
+<body>
+    <th:block th:fragment="content">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-calendar-plus"></i>
+                <span th:text="${event.eventID != null && event.eventID != '' ? 'Edit Event' : 'Create Event'}">Create Event</span>
+            </h1>
+            <a th:href="@{/events}" class="btn btn-secondary">Back</a>
+        </div>
+
+        <div class="card" style="max-width: 800px;">
+            <form th:action="@{/events/save}" th:object="${event}" method="post" id="eventForm">
+                <!-- Basic Info -->
+                <div class="form-group">
+                    <label class="form-label">Event ID <span style="color: var(--error);">*</span></label>
+                    <input type="text" th:field="*{eventID}" class="form-control" 
+                           th:readonly="${event.eventID != null && event.eventID != ''}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Event Name <span style="color: var(--error);">*</span></label>
+                    <input type="text" th:field="*{eventName}" class="form-control" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-lg);">
+                    <div class="form-group">
+                        <label class="form-label">Date <span style="color: var(--error);">*</span></label>
+                        <input type="date" th:field="*{eventDate}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <input type="number" th:field="*{semester}" class="form-control" min="1" max="2" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">School Year</label>
+                        <input type="text" th:field="*{schoolYear}" class="form-control" placeholder="2025-2026">
+                    </div>
+                </div>
+
+                <!-- Session Type -->
+                <div class="form-group">
+                    <label class="form-label">Session Type <span style="color: var(--error);">*</span></label>
+                    <select th:field="*{sessionType}" class="form-select" id="sessionType" onchange="updateSessionFields()" required>
+                        <option value="">Select Session Type</option>
+                        <option value="MORNING_ONLY">Morning Only</option>
+                        <option value="AFTERNOON_ONLY">Afternoon Only</option>
+                        <option value="BOTH">Both (Morning & Afternoon)</option>
+                    </select>
+                </div>
+
+                <!-- Morning Session Start-Stop Times -->
+                <div class="time-section" id="morningSection" style="display: none;">
+                    <h4>Morning Session - Start-Stop Times</h4>
+                    
+                    <div style="margin-bottom: var(--spacing-md);">
+                        <h5 style="font-size: 0.9rem; margin-bottom: var(--spacing-sm); color: var(--dark-text);">Time-In Window</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                            <div class="form-group">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" th:field="*{timeInStartAM}" class="form-control" id="timeInStartAM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeInStartAM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stop Time</label>
+                                <input type="time" th:field="*{timeInStopAM}" class="form-control" id="timeInStopAM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeInStopAM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h5 style="font-size: 0.9rem; margin-bottom: var(--spacing-sm); color: var(--dark-text);">Time-Out Window</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                            <div class="form-group">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" th:field="*{timeOutStartAM}" class="form-control" id="timeOutStartAM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeOutStartAM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stop Time</label>
+                                <input type="time" th:field="*{timeOutStopAM}" class="form-control" id="timeOutStopAM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeOutStopAM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Afternoon Session Start-Stop Times -->
+                <div class="time-section" id="afternoonSection" style="display: none;">
+                    <h4>Afternoon Session - Start-Stop Times</h4>
+                    
+                    <div style="margin-bottom: var(--spacing-md);">
+                        <h5 style="font-size: 0.9rem; margin-bottom: var(--spacing-sm); color: var(--dark-text);">Time-In Window</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                            <div class="form-group">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" th:field="*{timeInStartPM}" class="form-control" id="timeInStartPM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeInStartPM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stop Time</label>
+                                <input type="time" th:field="*{timeInStopPM}" class="form-control" id="timeInStopPM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeInStopPM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h5 style="font-size: 0.9rem; margin-bottom: var(--spacing-sm); color: var(--dark-text);">Time-Out Window</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                            <div class="form-group">
+                                <label class="form-label">Start Time</label>
+                                <input type="time" th:field="*{timeOutStartPM}" class="form-control" id="timeOutStartPM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeOutStartPM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stop Time</label>
+                                <input type="time" th:field="*{timeOutStopPM}" class="form-control" id="timeOutStopPM">
+                                <button type="button" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-xs);" onclick="setCurrentTime('timeOutStopPM')">
+                                    <i class="bi bi-clock"></i> Use Current Time
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fine Amounts -->
+                <div class="time-section">
+                    <h4>Fine Amounts</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                        <div class="form-group">
+                            <label class="form-label">Fine for Absent (₱)</label>
+                            <input type="number" th:field="*{fineAmountAbsent}" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fine for Late (₱)</label>
+                            <input type="number" th:field="*{fineAmountLate}" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: var(--spacing-md); margin-top: var(--spacing-xl);">
+                    <a th:href="@{/events}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i>
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            // Initialize session fields based on session type
+            document.addEventListener('DOMContentLoaded', function() {
+                updateSessionFields();
+            });
+
+            function updateSessionFields() {
+                const sessionType = document.getElementById('sessionType').value;
+                const morningSection = document.getElementById('morningSection');
+                const afternoonSection = document.getElementById('afternoonSection');
+                
+                // Hide both sections first
+                morningSection.style.display = 'none';
+                afternoonSection.style.display = 'none';
+                
+                // Show based on session type
+                if (sessionType === 'MORNING_ONLY' || sessionType === 'BOTH') {
+                    morningSection.style.display = 'block';
+                }
+                if (sessionType === 'AFTERNOON_ONLY' || sessionType === 'BOTH') {
+                    afternoonSection.style.display = 'block';
+                }
+            }
+
+            function setCurrentTime(fieldId) {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const timeString = hours + ':' + minutes;
+                document.getElementById(fieldId).value = timeString;
+            }
+        </script>
+    </th:block>
+</body>
+</html>

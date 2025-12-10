@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:include="layout :: layout">
+<head>
+    <style>
+        .rfid-scanner {
+            background: var(--white);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-3xl);
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+            transition: all var(--transition-base);
+        }
+        .rfid-scanner.active {
+            border-color: var(--primary);
+            background: rgba(255, 106, 0, 0.02);
+        }
+        .rfid-input {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto var(--spacing-lg);
+            padding: 1.25rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 2px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-base);
+        }
+        .rfid-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 106, 0, 0.1);
+        }
+        .scan-result {
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-lg);
+            font-weight: 500;
+            display: none;
+        }
+        .scan-result.show {
+            display: block;
+        }
+        .scan-result.success {
+            background: var(--success-light);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+        .scan-result.warning {
+            background: var(--warning-light);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+        .scan-result.error {
+            background: var(--error-light);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+    </style>
+</head>
+<body>
+    <th:block th:fragment="content">
+        <!-- Hidden input for eventId to ensure it's available in JavaScript -->
+        <input type="hidden" id="eventIdInput" th:value="${event.eventID}" data-event-id="${event.eventID}">
+        
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-clipboard-check"></i>
+                <span th:text="${event.eventName} + ' (' + ${event.eventID} + ')'">Event Attendance</span>
+            </h1>
+            <a th:href="@{/events}" class="btn btn-secondary">Back to Events</a>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success">
+            <i class="bi bi-check-circle"></i>
+            <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-error">
+            <i class="bi bi-exclamation-circle"></i>
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- Event Session Info -->
+        <div class="card mb-xl" th:if="${event.sessionType != null}">
+            <div class="card-header">
+                <h3 class="card-title">Attendance Windows</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-xl);">
+                    <!-- Morning Session -->
+                    <div th:if="${event.sessionType.name() == 'MORNING_ONLY' or event.sessionType.name() == 'BOTH'}">
+                        <h4 style="margin-bottom: var(--spacing-md); color: var(--dark-text);">Morning Session</h4>
+                        <div style="margin-bottom: var(--spacing-md);">
+                            <strong>Time-In:</strong> 
+                            <span th:if="${event.timeInStartAM != null and event.timeInStopAM != null}"
+                                  th:text="${#temporals.format(event.timeInStartAM, 'HH:mm')} + ' - ' + ${#temporals.format(event.timeInStopAM, 'HH:mm')}">-</span>
+                            <span th:if="${event.timeInStartAM == null or event.timeInStopAM == null}">Not set</span>
+                        </div>
+                        <div style="margin-bottom: var(--spacing-md);">
+                            <strong>Time-Out:</strong> 
+                            <span th:if="${event.timeOutStartAM != null and event.timeOutStopAM != null}"
+                                  th:text="${#temporals.format(event.timeOutStartAM, 'HH:mm')} + ' - ' + ${#temporals.format(event.timeOutStopAM, 'HH:mm')}">-</span>
+                            <span th:if="${event.timeOutStartAM == null or event.timeOutStopAM == null}">Not set</span>
+                        </div>
+                        <div style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openWindow('AM', true)">
+                                <i class="bi bi-play-circle"></i> Open AM Time-In
+                            </button>
+                            <form th:action="@{/attendance/mark-absentees/{id}(id=${event.eventID})}" method="post" style="display: inline;">
+                                <input type="hidden" name="sessionType" value="AM">
+                                <input type="hidden" name="isTimeIn" value="true">
+                                <button type="submit" class="btn btn-secondary btn-sm" 
+                                        onclick="return confirm('Mark absentees for AM Time-In?');">
+                                    <i class="bi bi-check-circle"></i> Done AM Time-In
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openWindow('AM', false)">
+                                <i class="bi bi-play-circle"></i> Open AM Time-Out
+                            </button>
+                            <form th:action="@{/attendance/mark-absentees/{id}(id=${event.eventID})}" method="post" style="display: inline;">
+                                <input type="hidden" name="sessionType" value="AM">
+                                <input type="hidden" name="isTimeIn" value="false">
+                                <button type="submit" class="btn btn-secondary btn-sm"
+                                        onclick="return confirm('Mark absentees for AM Time-Out?');">
+                                    <i class="bi bi-check-circle"></i> Done AM Time-Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Afternoon Session -->
+                    <div th:if="${event.sessionType.name() == 'AFTERNOON_ONLY' or event.sessionType.name() == 'BOTH'}">
+                        <h4 style="margin-bottom: var(--spacing-md); color: var(--dark-text);">Afternoon Session</h4>
+                        <div style="margin-bottom: var(--spacing-md);">
+                            <strong>Time-In:</strong> 
+                            <span th:if="${event.timeInStartPM != null and event.timeInStopPM != null}"
+                                  th:text="${#temporals.format(event.timeInStartPM, 'HH:mm')} + ' - ' + ${#temporals.format(event.timeInStopPM, 'HH:mm')}">-</span>
+                            <span th:if="${event.timeInStartPM == null or event.timeInStopPM == null}">Not set</span>
+                        </div>
+                        <div style="margin-bottom: var(--spacing-md);">
+                            <strong>Time-Out:</strong> 
+                            <span th:if="${event.timeOutStartPM != null and event.timeOutStopPM != null}"
+                                  th:text="${#temporals.format(event.timeOutStartPM, 'HH:mm')} + ' - ' + ${#temporals.format(event.timeOutStopPM, 'HH:mm')}">-</span>
+                            <span th:if="${event.timeOutStartPM == null or event.timeOutStopPM == null}">Not set</span>
+                        </div>
+                        <div style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openWindow('PM', true)">
+                                <i class="bi bi-play-circle"></i> Open PM Time-In
+                            </button>
+                            <form th:action="@{/attendance/mark-absentees/{id}(id=${event.eventID})}" method="post" style="display: inline;">
+                                <input type="hidden" name="sessionType" value="PM">
+                                <input type="hidden" name="isTimeIn" value="true">
+                                <button type="submit" class="btn btn-secondary btn-sm"
+                                        onclick="return confirm('Mark absentees for PM Time-In?');">
+                                    <i class="bi bi-check-circle"></i> Done PM Time-In
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openWindow('PM', false)">
+                                <i class="bi bi-play-circle"></i> Open PM Time-Out
+                            </button>
+                            <form th:action="@{/attendance/mark-absentees/{id}(id=${event.eventID})}" method="post" style="display: inline;">
+                                <input type="hidden" name="sessionType" value="PM">
+                                <input type="hidden" name="isTimeIn" value="false">
+                                <button type="submit" class="btn btn-secondary btn-sm"
+                                        onclick="return confirm('Mark absentees for PM Time-Out?');">
+                                    <i class="bi bi-check-circle"></i> Done PM Time-Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RFID Scanner -->
+        <div class="rfid-scanner" id="rfidScanner">
+            <h3 style="margin-bottom: var(--spacing-lg); color: var(--dark-text);">RFID Scanner</h3>
+            <div style="margin-bottom: var(--spacing-md);">
+                <label class="form-label">Current Session:</label>
+                <select id="currentSession" class="form-select" style="max-width: 200px; margin: 0 auto;">
+                    <option value="AM">Morning (AM)</option>
+                    <option value="PM">Afternoon (PM)</option>
+                </select>
+            </div>
+            <div style="margin-bottom: var(--spacing-md);">
+                <label class="form-label">Type:</label>
+                <select id="isTimeIn" class="form-select" style="max-width: 200px; margin: 0 auto;">
+                    <option value="true">Time-In</option>
+                    <option value="false">Time-Out</option>
+                </select>
+            </div>
+            <input type="text" id="rfidInput" class="rfid-input" 
+                   placeholder="Scan or enter RFID tag..." autofocus>
+            <button type="button" class="btn btn-primary" onclick="scanRFID()">
+                <i class="bi bi-upc-scan"></i>
+                Scan RFID
+            </button>
+            <div id="scanResult" class="scan-result"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-bar">
+            <a th:href="@{/attendance/event/{id}(id=${event.eventID})}" class="btn btn-secondary">
+                <i class="bi bi-arrow-clockwise"></i>
+                Refresh
+            </a>
+            <form th:action="@{/attendance/finalize/{id}(id=${event.eventID})}" method="post" style="display: inline;"
+                  onsubmit="return confirm('Finalize this event? This will mark all students without attendance as ABSENT and generate fines.');">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i>
+                    Finalize Event & Compute Fines
+                </button>
+            </form>
+        </div>
+
+        <!-- Attendance Table -->
+        <div class="card">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Course</th>
+                            <th>Year</th>
+                            <th>Section</th>
+                            <th>Status</th>
+                            <th>Check-In Time</th>
+                            <th>Source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${attendances.isEmpty()}">
+                            <td colspan="8" style="text-align: center; padding: var(--spacing-xl); color: #6B7280;">No attendance records yet.</td>
+                        </tr>
+                        <tr th:each="attendance : ${attendances}" th:with="student=${studentMap.get(attendance.studID)}">
+                            <td th:text="${attendance.studID}">STUD001</td>
+                            <td th:text="${student != null ? student.fullName : attendance.studID}">Student Name</td>
+                            <td th:text="${student != null ? student.course : '-'}">-</td>
+                            <td th:text="${student != null ? student.yearLevel : '-'}">-</td>
+                            <td th:text="${student != null ? student.section : '-'}">-</td>
+                            <td>
+                                <span th:if="${attendance.status.toString() == 'PRESENT'}" class="badge badge-success">PRESENT</span>
+                                <span th:if="${attendance.status.toString() == 'LATE'}" class="badge badge-warning">LATE</span>
+                                <span th:if="${attendance.status.toString() == 'ABSENT'}" class="badge badge-error">ABSENT</span>
+                            </td>
+                            <td th:text="${attendance.checkInTime != null ? #temporals.format(attendance.checkInTime, 'yyyy-MM-dd HH:mm') : 'N/A'}">N/A</td>
+                            <td th:text="${attendance.scanSource ?: 'MANUAL'}">MANUAL</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            // Function to get eventId from multiple sources
+            function getEventId() {
+                let eventId = '';
+                
+                // Method 1: Try from hidden input (most reliable)
+                const eventIdInput = document.getElementById('eventIdInput');
+                if (eventIdInput) {
+                    eventId = eventIdInput.value || eventIdInput.getAttribute('data-event-id');
+                    if (eventId && eventId.trim() !== '') {
+                        return eventId.trim();
+                    }
+                }
+                
+                // Method 2: Extract from URL path
+                const urlPath = window.location.pathname;
+                const match = urlPath.match(/\/attendance\/event\/([^\/\?]+)/);
+                if (match && match[1]) {
+                    eventId = match[1].trim();
+                    if (eventId !== '') {
+                        return eventId;
+                    }
+                }
+                
+                // Method 3: Try from Thymeleaf inline (fallback)
+                try {
+                    const thymeleafEventId = /*[[${event?.eventID}]]*/ '';
+                    if (thymeleafEventId && thymeleafEventId.trim() !== '') {
+                        return thymeleafEventId.trim();
+                    }
+                } catch(e) {
+                    console.log('Thymeleaf eventId not available');
+                }
+                
+                return eventId;
+            }
+            
+            // Initialize eventId when DOM is ready
+            let eventId = '';
+            document.addEventListener('DOMContentLoaded', function() {
+                eventId = getEventId();
+                console.log('Event ID loaded:', eventId);
+                
+                if (!eventId || eventId.trim() === '') {
+                    console.error('Event ID could not be determined. URL:', window.location.pathname);
+                }
+            });
+            
+            // Also try immediately (in case DOM is already loaded)
+            eventId = getEventId();
+            console.log('Event ID (immediate):', eventId);
+            
+            const rfidInput = document.getElementById('rfidInput');
+            const scanResult = document.getElementById('scanResult');
+            const rfidScanner = document.getElementById('rfidScanner');
+
+            rfidInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    scanRFID();
+                }
+            });
+
+            let currentActiveSession = null;
+            let currentActiveType = null;
+
+            function openWindow(sessionType, isTimeIn) {
+                currentActiveSession = sessionType;
+                currentActiveType = isTimeIn;
+                document.getElementById('currentSession').value = sessionType;
+                document.getElementById('isTimeIn').value = isTimeIn.toString();
+                rfidInput.focus();
+                showResult('Window opened for ' + sessionType + ' ' + (isTimeIn ? 'Time-In' : 'Time-Out'), 'success');
+            }
+
+            function scanRFID() {
+                const rfidTag = rfidInput.value.trim();
+                if (!rfidTag) {
+                    showResult('Please enter RFID tag', 'error');
+                    return;
+                }
+
+                // Get eventId fresh each time (in case it wasn't set initially)
+                let currentEventId = getEventId();
+                
+                if (!currentEventId || currentEventId.trim() === '') {
+                    showResult('Error: Event ID is missing. Please refresh the page. URL: ' + window.location.pathname, 'error');
+                    console.error('Event ID not found. URL:', window.location.pathname);
+                    console.error('Available elements:', {
+                        eventIdInput: document.getElementById('eventIdInput'),
+                        urlPath: window.location.pathname
+                    });
+                    return;
+                }
+                
+                // Update the global eventId variable
+                eventId = currentEventId;
+
+                const sessionType = document.getElementById('currentSession').value;
+                const isTimeIn = document.getElementById('isTimeIn').value === 'true';
+
+                rfidScanner.classList.add('active');
+                scanResult.className = 'scan-result';
+                scanResult.textContent = 'Scanning...';
+                scanResult.classList.add('show', 'info');
+
+                fetch('/attendance/scan-rfid-window', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'rfidTag=' + encodeURIComponent(rfidTag) + 
+                          '&eventId=' + encodeURIComponent(eventId.trim()) +
+                          '&sessionType=' + encodeURIComponent(sessionType) +
+                          '&isTimeIn=' + encodeURIComponent(isTimeIn)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let message = '✓ ' + data.studentName + ' - ' + data.status;
+                        if (data.status === 'LATE') {
+                            message += ' (' + data.minutesLate + ' min late)';
+                            showResult(message, 'warning');
+                        } else if (data.status === 'PRESENT') {
+                            showResult(message, 'success');
+                        } else {
+                            showResult(message, 'error');
+                        }
+                        rfidInput.value = '';
+                        rfidInput.focus();
+                        // Reload after a brief moment to ensure database is updated
+                        setTimeout(() => {
+                            window.location.reload(true); // Force reload from server
+                        }, 300);
+                    } else {
+                        showResult('Error: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showResult('Error: ' + error.message, 'error');
+                });
+            }
+
+            function showResult(message, type) {
+                scanResult.textContent = message;
+                scanResult.className = 'scan-result show ' + type;
+                setTimeout(() => {
+                    scanResult.classList.remove('show');
+                    rfidScanner.classList.remove('active');
+                }, 5000);
+            }
+        </script>
+    </th:block>
+</body>
+</html>

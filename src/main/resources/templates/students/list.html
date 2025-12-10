@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:include="layout :: layout">
+<body>
+    <th:block th:fragment="content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-people"></i>
+                Students
+            </h1>
+            <a th:href="@{/students/create}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                Add Student
+            </a>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <div th:if="${successMessage}" class="alert alert-success">
+            <i class="bi bi-check-circle"></i>
+            <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-error">
+            <i class="bi bi-exclamation-circle"></i>
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <form th:action="@{/students}" method="get" class="search-row">
+                <div class="form-group">
+                    <label class="form-label">Search By</label>
+                    <select name="searchType" class="form-select">
+                        <option value="All Fields" th:selected="${searchType == 'All Fields'}">All Fields</option>
+                        <option value="Student ID" th:selected="${searchType == 'Student ID'}">Student ID</option>
+                        <option value="First Name" th:selected="${searchType == 'First Name'}">First Name</option>
+                        <option value="Last Name" th:selected="${searchType == 'Last Name'}">Last Name</option>
+                        <option value="Full Name" th:selected="${searchType == 'Full Name'}">Full Name</option>
+                        <option value="Course" th:selected="${searchType == 'Course'}">Course</option>
+                        <option value="Year Level" th:selected="${searchType == 'Year Level'}">Year Level</option>
+                        <option value="Section" th:selected="${searchType == 'Section'}">Section</option>
+                        <option value="RFID Tag" th:selected="${searchType == 'RFID Tag'}">RFID Tag</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Query</label>
+                    <input type="text" name="search" class="form-control" th:value="${search}" placeholder="Enter search term...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sort By</label>
+                    <select name="sortBy" class="form-select">
+                        <option value="lastName" th:selected="${sortBy == 'lastName'}">Last Name</option>
+                        <option value="firstName" th:selected="${sortBy == 'firstName'}">First Name</option>
+                        <option value="studID" th:selected="${sortBy == 'studID'}">Student ID</option>
+                        <option value="course" th:selected="${sortBy == 'course'}">Course</option>
+                        <option value="yearLevel" th:selected="${sortBy == 'yearLevel'}">Year Level</option>
+                        <option value="section" th:selected="${sortBy == 'section'}">Section</option>
+                        <option value="rfidTag" th:selected="${sortBy == 'rfidTag'}">RFID Tag</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Order</label>
+                    <select name="sortOrder" class="form-select">
+                        <option value="asc" th:selected="${sortOrder == 'asc'}">Ascending</option>
+                        <option value="desc" th:selected="${sortOrder == 'desc'}">Descending</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                        Search
+                    </button>
+                    <a th:href="@{/students}" class="btn btn-secondary" style="margin-left: var(--spacing-sm);">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Students Table -->
+        <div class="card">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Course</th>
+                            <th>Year Level</th>
+                            <th>Section</th>
+                            <th>RFID Tag</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${students.isEmpty()}">
+                            <td colspan="8" style="text-align: center; padding: var(--spacing-xl); color: #6B7280;">No students found.</td>
+                        </tr>
+                        <tr th:each="student : ${students}">
+                            <td th:text="${student.studID}">STUD001</td>
+                            <td th:text="${student.firstName}">John</td>
+                            <td th:text="${student.lastName}">Doe</td>
+                            <td th:text="${student.course}">BSIT</td>
+                            <td th:text="${student.yearLevel}">1</td>
+                            <td th:text="${student.section}">A</td>
+                            <td>
+                                <span th:if="${student.rfidTag != null and !#strings.isEmpty(student.rfidTag)}" th:text="${student.rfidTag}" class="badge badge-info"></span>
+                                <span th:if="${student.rfidTag == null or #strings.isEmpty(student.rfidTag)}" class="text-muted">—</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: var(--spacing-sm);">
+                                    <a th:href="@{/students/edit/{id}(id=${student.studID})}" class="btn btn-secondary btn-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form th:action="@{/students/delete/{id}(id=${student.studID})}" method="post" style="display: inline;" 
+                                          onsubmit="return confirm('Are you sure you want to delete this student?');">
+                                        <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--error);">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </th:block>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:include="layout :: layout">
+<body>
+    <th:block th:fragment="content">
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-calendar-event"></i>
+                Events
+            </h1>
+            <a th:href="@{/events/create}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                Create Event
+            </a>
+        </div>
+
+        <div th:if="${successMessage}" class="alert alert-success">
+            <i class="bi bi-check-circle"></i>
+            <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-error">
+            <i class="bi bi-exclamation-circle"></i>
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <div class="card">
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Event ID</th>
+                            <th>Event Name</th>
+                            <th>Date</th>
+                            <th>Semester</th>
+                            <th>School Year</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${events.isEmpty()}">
+                            <td colspan="6" style="text-align: center; padding: var(--spacing-xl); color: #6B7280;">No events found.</td>
+                        </tr>
+                        <tr th:each="event : ${events}">
+                            <td th:text="${event.eventID}">EVT001</td>
+                            <td th:text="${event.eventName}">Event Name</td>
+                            <td th:text="${#temporals.format(event.eventDate, 'yyyy-MM-dd')}">2025-01-01</td>
+                            <td th:text="${event.semester ?: 'N/A'}">1</td>
+                            <td th:text="${event.schoolYear ?: 'N/A'}">2025-2026</td>
+                            <td>
+                                <div style="display: flex; gap: var(--spacing-sm);">
+                                    <a th:href="@{/events/edit/{id}(id=${event.eventID})}" class="btn btn-secondary btn-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a th:href="@{/attendance/event/{id}(id=${event.eventID})}" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-clipboard-check"></i>
+                                        Attendance
+                                    </a>
+                                    <form th:action="@{/events/delete/{id}(id=${event.eventID})}" method="post" style="display: inline;" 
+                                          onsubmit="return confirm('Are you sure?');">
+                                        <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--error);">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </th:block>
+</body>
+</html>
