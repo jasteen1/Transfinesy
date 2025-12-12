@@ -963,6 +963,13 @@ public double calculateCreditAmount(int hoursRendered) {
 **Methods:** 
 - `checkInStudent(String studID, String eventID)` - Lines 89-137
 - `checkInStudentWithWindow(String studID, String eventID, String sessionType, boolean isTimeIn)` - Lines 279-409
+- `findAttendanceByStudentEventSessionAndType(String studID, String eventID, String session, String recordType)` - Private method for session-based lookup
+
+**Session Separation:**
+- AM and PM attendance records are stored separately using the `session` field ("AM" or "PM")
+- TIME_IN and TIME_OUT records are stored separately using the `record_type` field ("TIME_IN" or "TIME_OUT")
+- Prevents PM records from overwriting AM records
+- Each session and record type combination creates a unique attendance record
 
 **Logic for Legacy Time-Based Attendance:**
 1. Get check-in time (current timestamp)
