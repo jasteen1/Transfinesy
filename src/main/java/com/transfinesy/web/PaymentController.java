@@ -108,8 +108,15 @@ public class PaymentController {
             @RequestParam String date,
             RedirectAttributes redirectAttributes) {
         try {
-            // Removed balance check - allow payments even if balance is 0 or negative
-            // This allows advance payments and corrections
+             // Check if student has a balance (debt) to pay
+            double currentBalance = ledgerService.getBalanceForStudent(studentId);
+            if (currentBalance <= 0) {
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "Cannot record payment. Student has no outstanding balance (Balance: ₱" + 
+                    String.format("%.2f", currentBalance) + ").");
+                return "redirect:/payments";
+            }
+            
             LocalDate paymentDate = LocalDate.parse(date);
             paymentService.recordPayment(studentId, amount, orNumber, paymentDate);
             redirectAttributes.addFlashAttribute("successMessage", "Payment recorded successfully.");

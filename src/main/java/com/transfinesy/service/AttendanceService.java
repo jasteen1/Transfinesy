@@ -13,7 +13,8 @@ import com.transfinesy.repo.EventRepositoryImpl;
 import com.transfinesy.repo.StudentRepository;
 import com.transfinesy.repo.StudentRepositoryImpl;
 import com.transfinesy.service.RFIDService;
-import com.transfinesy.util.Queue;
+import java.util.Queue;
+import java.util.LinkedList; 
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -45,7 +46,7 @@ public class AttendanceService {
         this.eventRepository = new EventRepositoryImpl();
         this.studentRepository = new StudentRepositoryImpl();
         this.rfidService = new RFIDService();
-        this.scanQueue = new Queue<>();
+        this.scanQueue = new LinkedList<>();
     }
     
     /**
@@ -470,7 +471,7 @@ public class AttendanceService {
         
         // Add scan request to queue for ordered processing (FIFO)
         AttendanceScanRequest request = new AttendanceScanRequest(rfidTag, event.getEventID(), sessionType, isTimeIn);
-        scanQueue.enqueue(request);
+        scanQueue.offer(request);
         
         // Process the scan (queue ensures FIFO order)
         try {
@@ -484,7 +485,7 @@ public class AttendanceService {
             
             // Remove processed request from queue (FIFO - first in, first out)
             if (!scanQueue.isEmpty()) {
-                scanQueue.dequeue();
+                scanQueue.remove();
             }
             
             return attendance;
@@ -492,7 +493,7 @@ public class AttendanceService {
             // Remove failed request from queue
             if (!scanQueue.isEmpty()) {
                 try {
-                    scanQueue.dequeue();
+                    scanQueue.remove();
                 } catch (Exception ex) {
                     // Ignore if queue is empty
                 }
