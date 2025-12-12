@@ -22,6 +22,7 @@
 8. [Computational Logic Documentation](#8-computational-logic-documentation)
 9. [Error Handling Summary](#9-error-handling-summary)
 10. [Requirements → Code Mapping Summary](#10-requirements--code-mapping-summary)
+11. [Recent System Improvements](#11-recent-system-improvements)
 
 ---
 
@@ -67,7 +68,7 @@ The application follows a **layered architecture**:
 |------|---------|-------------|--------------|
 | `Student.java` | Represents a student entity with ID, name, course, year level, section, and RFID tag. Uses encapsulation with private fields and getters/setters. | Model/Entity | Used by all repositories, services, and controllers |
 | `Event.java` | Represents a school event with date, semester, school year, attendance time windows (AM/PM, Start-Stop), and configurable fine amounts (fineAmountAbsent, fineAmountLate). | Model/Entity | Used by EventRepository, AttendanceService, FineService |
-| `Attendance.java` | Represents attendance record for a student at an event. Contains status (PRESENT/LATE/ABSENT/EXCUSED), minutes late, and timestamps. | Model/Entity | Used by AttendanceRepository, AttendanceService, FineService |
+| `Attendance.java` | Represents attendance record for a student at an event. Contains status (PRESENT/LATE/ABSENT/EXCUSED), minutes late, timestamps, session (AM/PM), and recordType (TIME_IN/TIME_OUT). Supports separate AM/PM records to prevent overwriting. | Model/Entity | Used by AttendanceRepository, AttendanceService, FineService |
 | `Fine.java` | Represents a fine transaction. Extends `Transaction` abstract class. Implements `getSignedAmount()` to return positive amount (increases debt). | Model/Entity (Inherits Transaction) | Used by FineRepository, FineService, LedgerService |
 | `Payment.java` | Represents a payment transaction. Extends `Transaction` abstract class. Implements `getSignedAmount()` to return negative amount (reduces debt). | Model/Entity (Inherits Transaction) | Used by PaymentRepository, PaymentService, LedgerService |
 | `CommunityService.java` | Represents community service record with hours rendered and credit amount. Not a Transaction subclass but contributes to ledger. | Model/Entity | Used by CommunityServiceRepository, CommunityServiceService, LedgerService |
@@ -83,11 +84,11 @@ The application follows a **layered architecture**:
 | File | Purpose | System Part | Interactions |
 |------|---------|-------------|--------------|
 | `StudentRepository.java` | Interface defining CRUD and search operations for Student entities. Demonstrates abstraction. | Repository Interface | Implemented by StudentRepositoryImpl, used by StudentService |
-| `StudentRepositoryImpl.java` | JDBC implementation of StudentRepository. Uses ArrayList to return query results. Contains try-catch blocks for error handling. | Repository Implementation | Implements StudentRepository, uses DBConfig, called by StudentService |
+| `StudentRepositoryImpl.java` | JDBC implementation of StudentRepository. Uses ArrayList to return query results. Enhanced search supports full name queries (firstname lastname, lastname firstname) with CONCAT operations. Contains try-catch blocks for error handling. | Repository Implementation | Implements StudentRepository, uses DBConfig, called by StudentService |
 | `EventRepository.java` | Interface for Event CRUD operations. | Repository Interface | Implemented by EventRepositoryImpl, used by EventService |
 | `EventRepositoryImpl.java` | JDBC implementation using ArrayList for results. Handles legacy and new Start-Stop attendance fields. | Repository Implementation | Implements EventRepository, uses DBConfig, called by EventService |
 | `AttendanceRepository.java` | Interface for Attendance operations including findByEvent, findByStudent. | Repository Interface | Implemented by AttendanceRepositoryImpl, used by AttendanceService |
-| `AttendanceRepositoryImpl.java` | JDBC implementation. Uses ArrayList for query results. Handles scan_source field with backward compatibility. | Repository Implementation | Implements AttendanceRepository, uses DBConfig, called by AttendanceService |
+| `AttendanceRepositoryImpl.java` | JDBC implementation. Uses ArrayList for query results. Handles scan_source, session, and record_type fields with backward compatibility. Supports separate AM/PM attendance records. | Repository Implementation | Implements AttendanceRepository, uses DBConfig, called by AttendanceService |
 | `FineRepository.java` | Interface for Fine operations. | Repository Interface | Implemented by FineRepositoryImpl, used by FineService |
 | `FineRepositoryImpl.java` | JDBC implementation. Uses ArrayList for results. | Repository Implementation | Implements FineRepository, uses DBConfig, called by FineService |
 | `PaymentRepository.java` | Interface for Payment operations. | Repository Interface | Implemented by PaymentRepositoryImpl, used by PaymentService |
@@ -101,7 +102,7 @@ The application follows a **layered architecture**:
 |------|---------|-------------|--------------|
 | `StudentService.java` | Business logic for student operations. Contains sorting algorithm (uses List.sort with custom comparator). Validates inputs and throws IllegalArgumentException. | Service | Uses StudentRepository interface, called by StudentController |
 | `EventService.java` | Business logic for event management. Validates event ID before operations. | Service | Uses EventRepository interface, called by EventController |
-| `AttendanceService.java` | Core attendance logic. Determines PRESENT/LATE status based on time windows. Uses Queue data structure for FIFO RFID scan processing. Contains computational logic for minutes late calculation. | Service | Uses AttendanceRepository, EventRepository, StudentRepository, FineService, RFIDService, Queue |
+| `AttendanceService.java` | Core attendance logic. Determines PRESENT/LATE status based on time windows. Uses Queue data structure for FIFO RFID scan processing. Implements AM/PM session separation to prevent record overwriting. Creates separate records for TIME_IN and TIME_OUT. Contains computational logic for minutes late calculation. | Service | Uses AttendanceRepository, EventRepository, StudentRepository, FineService, RFIDService, Queue |
 | `FineService.java` | Fine calculation business logic. Implements fine computation with event-specific fine amounts. Supports configurable fine amounts per event (stored in Event.fineAmountAbsent and Event.fineAmountLate). Falls back to default constants (ABSENT = ₱100, LATE = ₱2/minute, min ₱20) if event doesn't specify. | Service | Uses FineRepository, LedgerService, Event model, called by AttendanceService |
 | `PaymentService.java` | Payment recording logic. Validates payment amount > 0 and OR number required. Updates ledger after payment. | Service | Uses PaymentRepository, LedgerService, called by PaymentController |
 | `CommunityServiceService.java` | Community service credit calculation. Converts hours to credits (1 hour = ₱50). Validates hours > 0. | Service | Uses CommunityServiceRepository, LedgerService, called by CommunityServiceController |
@@ -116,13 +117,13 @@ The application follows a **layered architecture**:
 |------|---------|-------------|--------------|
 | `HomeController.java` | Root controller for home page. | Controller | Uses no services (static page) |
 | `StudentController.java` | Handles HTTP requests for student CRUD. Processes user input (search, sort parameters). Validates inputs and handles errors with flash messages. | Controller | Uses StudentService, handles user input validation |
-| `EventController.java` | Handles event management requests. | Controller | Uses EventService |
-| `AttendanceController.java` | Handles attendance recording (RFID and manual). Processes RFID scan input. Validates RFID tag and event ID. Returns JSON responses. | Controller | Uses AttendanceService, EventService, StudentService, processes RFID input |
+| `EventController.java` | Handles event management requests. Validates event dates (prevents past dates). Supports event creation and editing with session types and time windows. | Controller | Uses EventService |
+| `AttendanceController.java` | Handles attendance recording (RFID and manual). Processes RFID scan input. Validates RFID tag and event ID. Separates attendances by session (AM/PM/Legacy) for display. Returns JSON responses. | Controller | Uses AttendanceService, EventService, StudentService, processes RFID input |
 | `PaymentController.java` | Handles payment recording requests. Validates payment input (amount, OR number). | Controller | Uses PaymentService, validates user input |
 | `CommunityServiceController.java` | Handles community service recording. | Controller | Uses CommunityServiceService |
 | `LedgerController.java` | Displays student ledger view. | Controller | Uses LedgerService |
 | `ClearanceController.java` | Displays clearance status for students. | Controller | Uses ClearanceService, LedgerService |
-| `DashboardController.java` | Displays dashboard statistics. | Controller | Uses ReportService, multiple services |
+| `DashboardController.java` | Displays dashboard statistics with independent filters per section (Financial, Attendance, Community Service). Each section has its own Course, Year Level, and Section filters that operate independently. | Controller | Uses ReportService, AttendanceService, StudentService, EventService, LedgerService |
 | `TransparencyReportController.java` | Generates transparency reports. | Controller | Uses ReportService |
 | `CustomErrorController.java` | Custom error handling for application errors. Implements ErrorController interface. | Controller | Handles all application errors |
 
@@ -1454,7 +1455,7 @@ try {
 | **Fine Computation** | Event-specific fine amounts (ABSENT: configurable, LATE: configurable per minute, min ₱20). Falls back to defaults (₱100 absent, ₱2/min late) if event doesn't specify. | `FineService.java:47-68` | `calculateFineAmount(AttendanceStatus, int, Event)` |
 | **Payment Recording** | Validates amount > 0, OR number required | `PaymentService.java:34-51` | `recordPayment()` |
 | **Community Service Credits** | 1 hour = ₱50 credit | `CommunityServiceService.java:36-38` | `calculateCreditAmount()` |
-| **Attendance Classification** | PRESENT/LATE based on time windows | `AttendanceService.java:89-137, 279-409` | `checkInStudent()`, `checkInStudentWithWindow()` |
+| **Attendance Classification** | PRESENT/LATE based on time windows. Supports AM/PM session separation and TIME_IN/TIME_OUT record types. | `AttendanceService.java:89-137, 279-409` | `checkInStudent()`, `checkInStudentWithWindow()`, `findAttendanceByStudentEventSessionAndType()` |
 | **Clearance Evaluation** | Balance <= 0 = CLEARED | `ClearanceService.java:29-35` | `isEligibleForClearance()` |
 | **Ledger Balance** | Sum of all transaction signed amounts | `Ledger.java:44-51` | `computeBalance()` |
 
@@ -1475,7 +1476,7 @@ try {
 | **1:* Student → Fine** | Foreign key `Fine.studID` | `Fine.java:11` | One student, many fines |
 | **1:* Student → Payment** | Foreign key `Payment.studID` | `Payment.java:10` | One student, many payments |
 | **1:* Student → CommunityService** | Foreign key `CommunityService.studID` | `CommunityService.java:10` | One student, many service records |
-| **1:* Event → Attendance** | Foreign key `Attendance.eventID` | `Attendance.java:12` | One event, many attendance records |
+| **1:* Event → Attendance** | Foreign key `Attendance.eventID`. Multiple records per student per event (AM/PM, TIME_IN/TIME_OUT). | `Attendance.java:12` | One event, many attendance records (separated by session and record type) |
 | **1:* Event → Fine** | Foreign key `Fine.eventID` | `Fine.java:11` | One event, many fines |
 | **1:* Ledger → Transaction** | Composition `List<Transaction>` | `Ledger.java:15` | One ledger, many transactions |
 
@@ -1490,6 +1491,88 @@ try {
 
 ---
 
+## 11. Recent System Improvements
+
+### 11.1 AM/PM Attendance Separation
+
+**Problem Solved:** PM attendance records were overwriting AM attendance records, causing data loss.
+
+**Implementation:**
+- Added `session` field (AM/PM) to `Attendance` model
+- Added `record_type` field (TIME_IN/TIME_OUT) to `Attendance` model
+- Updated `AttendanceService.checkInStudentWithWindow()` to create separate records for each session and record type
+- Updated `AttendanceRepositoryImpl` to save/read session and record_type columns with backward compatibility
+- Updated `AttendanceController` to separate attendances by session for display
+
+**Files Modified:**
+- `model/Attendance.java` - Added session and recordType fields
+- `service/AttendanceService.java` - Updated to use session/recordType when creating records
+- `repo/AttendanceRepositoryImpl.java` - Updated save/read methods
+- `web/AttendanceController.java` - Separates attendances by session
+- `templates/attendance/event.html` - Displays AM/PM sections separately
+
+**Database Migration Required:**
+```sql
+ALTER TABLE attendance ADD COLUMN session VARCHAR(10) NULL;
+ALTER TABLE attendance ADD COLUMN record_type VARCHAR(20) NULL;
+```
+
+### 11.2 Student Search Enhancement
+
+**Problem Solved:** Full name searches ("firstname lastname") were not working.
+
+**Implementation:**
+- Enhanced `StudentRepositoryImpl.searchByName()` to support:
+  - `CONCAT(first_name, ' ', last_name)` - "firstname lastname"
+  - `CONCAT(last_name, ' ', first_name)` - "lastname firstname"
+  - Names without spaces
+- Enhanced `StudentRepositoryImpl.search()` (All Fields) with same full name support
+- Normalized input to handle multiple spaces
+
+**Files Modified:**
+- `repo/StudentRepositoryImpl.java` - Enhanced search SQL queries
+
+### 11.3 Attendance Table UI Improvements
+
+**Features Added:**
+1. **Search Bar:** Real-time filtering by Student ID, Name, Course
+2. **Show More/Less Toggle:** Collapsible sections for AM, PM, and Legacy records
+3. **Separate AM/PM Sections:** Clear visual separation with icons
+4. **Record Type Display:** Shows TIME_IN/TIME_OUT badges
+5. **Enhanced Time Display:** Shows appropriate time based on record type
+
+**Files Modified:**
+- `templates/attendance/event.html` - Complete UI overhaul
+
+### 11.4 Dashboard Independent Filters
+
+**Problem Solved:** Global filters affected all dashboard sections, making it difficult to view different data combinations.
+
+**Implementation:**
+- Each dashboard section (Financial, Attendance, Community Service) has independent filters
+- Filters operate independently - changing one section's filters doesn't affect others
+- Each section has its own Course, Year Level, and Section filters
+- Attendance section also includes Event filter
+
+**Files Modified:**
+- `web/DashboardController.java` - Separate filter parameters per section
+- `templates/dashboard/index.html` - Separate filter forms per section
+
+### 11.5 Event Date Validation
+
+**Problem Solved:** System allowed past dates and invalid years for events.
+
+**Implementation:**
+- Client-side validation: Date input `min` attribute set to today
+- Server-side validation: `EventService.validateEvent()` checks if date is before today
+- Automatic correction: Past dates are set to today when editing
+
+**Files Modified:**
+- `service/EventService.java` - Added date validation
+- `templates/events/form.html` - Added date validation JavaScript
+
+---
+
 ## Conclusion
 
 This technical documentation provides a comprehensive analysis of the transFINESy project, mapping all requirements to specific code implementations. The system demonstrates:
@@ -1500,6 +1583,7 @@ This technical documentation provides a comprehensive analysis of the transFINES
 - **Robust Computational Logic:** Fine calculation, payment processing, attendance classification, clearance evaluation
 - **Comprehensive Error Handling:** Input validation, business rule validation, try-catch blocks, exception responses
 - **Clear Relationships:** Multiple 1:* relationships properly implemented
+- **Recent Improvements:** AM/PM attendance separation, enhanced search, improved UI, independent dashboard filters, date validation
 
 All requirements have been successfully mapped to code files with specific line numbers and method names, providing a complete technical reference for academic defense.
 
