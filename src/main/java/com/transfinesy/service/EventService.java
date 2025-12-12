@@ -5,6 +5,7 @@ import com.transfinesy.repo.EventRepository;
 import com.transfinesy.repo.EventRepositoryImpl;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -51,16 +52,19 @@ public class EventService {
             throw new IllegalArgumentException("Event ID is required");
         }
         
-        // Event date validation: must be between year 2000 and current year
+        // Event date validation: must be today or in the future (cannot be in the past)
         if (event.getEventDate() != null) {
-            int eventYear = event.getEventDate().getYear();
-            int currentYear = java.time.Year.now().getValue();
+            LocalDate today = LocalDate.now();
+            LocalDate eventDate = event.getEventDate();
             
+            if (eventDate.isBefore(today)) {
+                throw new IllegalArgumentException("Event date cannot be in the past. Please select today or a future date.");
+            }
+            
+            // Also validate year range for sanity check
+            int eventYear = eventDate.getYear();
             if (eventYear < 2000) {
                 throw new IllegalArgumentException("Event date cannot be before year 2000");
-            }
-            if (eventYear > currentYear) {
-                throw new IllegalArgumentException("Event date cannot be after current year (" + currentYear + ")");
             }
         }
         

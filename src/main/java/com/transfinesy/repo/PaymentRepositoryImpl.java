@@ -149,5 +149,44 @@ public class PaymentRepositoryImpl implements PaymentRepository {
             throw new RuntimeException("Failed to delete payment", e);
         }
     }
+
+    @Override
+    public double getSumByDateRange(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE date >= ? AND date <= ?";
+
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setDate(1, Date.valueOf(startDate));
+            pstmt.setDate(2, Date.valueOf(endDate));
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
+
+    @Override
+    public double getTotalSum() {
+        String sql = "SELECT COALESCE(SUM(amount), 0) as total FROM payments";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
 }
 

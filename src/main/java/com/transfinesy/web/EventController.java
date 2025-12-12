@@ -42,6 +42,7 @@ public class EventController {
         model.addAttribute("pageTitle", "Add Event");
         model.addAttribute("activePage", "events");
         model.addAttribute("event", event);
+        model.addAttribute("minDate", LocalDate.now()); // Add today's date for min attribute
         return "events/form";
     }
 
@@ -51,9 +52,16 @@ public class EventController {
         if (event == null) {
             return "redirect:/events";
         }
+        
+        // If event date is in the past, set it to today
+        if (event.getEventDate() != null && event.getEventDate().isBefore(LocalDate.now())) {
+            event.setEventDate(LocalDate.now());
+        }
+        
         model.addAttribute("pageTitle", "Edit Event");
         model.addAttribute("activePage", "events");
         model.addAttribute("event", event);
+        model.addAttribute("minDate", LocalDate.now()); // Add today's date for min attribute
         return "events/form";
     }
 

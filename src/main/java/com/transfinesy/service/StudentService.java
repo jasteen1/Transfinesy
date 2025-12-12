@@ -214,6 +214,30 @@ public class StudentService {
         
         return students;
     }
+
+    /**
+     * Gets distinct year levels (optimized - uses SQL DISTINCT).
+     * @return List of distinct year levels, sorted
+     */
+    public List<String> getDistinctYearLevels() {
+        return repository.getDistinctYearLevels();
+    }
+
+    /**
+     * Gets distinct sections (optimized - uses SQL DISTINCT).
+     * @return List of distinct sections, sorted
+     */
+    public List<String> getDistinctSections() {
+        return repository.getDistinctSections();
+    }
+
+    /**
+     * Gets distinct courses (optimized - uses SQL DISTINCT).
+     * @return List of distinct courses, sorted
+     */
+    public List<String> getDistinctCourses() {
+        return repository.getDistinctCourses();
+    }
 }
 
 

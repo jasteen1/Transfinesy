@@ -15,6 +15,8 @@ public class Attendance {
     private LocalDateTime checkInTime;   // timestamp when council checks the student in
     private LocalDateTime checkOutTime;  // optional, can be null
     private String scanSource;          // values: "RFID" or "MANUAL"
+    private String session;             // values: "AM", "PM", or null for legacy records
+    private String recordType;           // values: "TIME_IN", "TIME_OUT", or null for legacy records
 
     public Attendance() {
     }
@@ -113,6 +115,22 @@ public class Attendance {
         this.scanSource = scanSource;
     }
 
+    public String getSession() {
+        return session;
+    }
+
+    public void setSession(String session) {
+        this.session = session;
+    }
+
+    public String getRecordType() {
+        return recordType;
+    }
+
+    public void setRecordType(String recordType) {
+        this.recordType = recordType;
+    }
+
     @Override
     public String toString() {
         return "Attendance{" +
@@ -124,6 +142,8 @@ public class Attendance {
                 ", checkInTime=" + checkInTime +
                 ", checkOutTime=" + checkOutTime +
                 ", scanSource='" + scanSource + '\'' +
+                ", session='" + session + '\'' +
+                ", recordType='" + recordType + '\'' +
                 '}';
     }
 }

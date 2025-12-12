@@ -47,8 +47,53 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-lg);">
                     <div class="form-group">
                         <label class="form-label">Date <span style="color: var(--error);">*</span></label>
-                        <input type="date" th:field="*{eventDate}" class="form-control" required>
+                        <input type="date" th:field="*{eventDate}" class="form-control" id="eventDate" required>
+                        <small class="form-text" style="color: #6B7280; font-size: 0.875rem; display: block; margin-top: 4px;">
+                            <i class="bi bi-info-circle"></i> Only today and future dates are allowed.
+                        </small>
                     </div>
+                    <script th:inline="javascript">
+                        /*<![CDATA[*/
+                        (function() {
+                            // Calculate today's date in YYYY-MM-DD format
+                            const today = new Date();
+                            const year = today.getFullYear();
+                            const month = String(today.getMonth() + 1).padStart(2, '0');
+                            const day = String(today.getDate()).padStart(2, '0');
+                            const minDate = year + '-' + month + '-' + day;
+                            
+                            // Function to set min date
+                            function setMinDate() {
+                                const dateInput = document.getElementById('eventDate');
+                                if (dateInput) {
+                                    dateInput.setAttribute('min', minDate);
+                                    dateInput.min = minDate;
+                                    
+                                    // If current value is in the past, set to today
+                                    if (dateInput.value && dateInput.value < minDate) {
+                                        dateInput.value = minDate;
+                                    }
+                                    return true;
+                                }
+                                return false;
+                            }
+                            
+                            // Try immediately
+                            if (!setMinDate()) {
+                                // If element doesn't exist yet, try on DOMContentLoaded
+                                if (document.readyState === 'loading') {
+                                    document.addEventListener('DOMContentLoaded', setMinDate);
+                                } else {
+                                    // DOM already loaded, retry
+                                    setTimeout(setMinDate, 50);
+                                }
+                            }
+                            
+                            // Also store for later use
+                            window.minEventDate = minDate;
+                        })();
+                        /*]]>*/
+                    </script>
                     <div class="form-group">
                         <label class="form-label">Semester</label>
                         <input type="number" th:field="*{semester}" class="form-control" min="1" max="2" value="1">
@@ -189,7 +234,107 @@
             // Initialize session fields based on session type
             document.addEventListener('DOMContentLoaded', function() {
                 updateSessionFields();
+                initializeDateValidation();
             });
+
+            function initializeDateValidation() {
+                const dateInput = document.getElementById('eventDate');
+                if (!dateInput) {
+                    // Retry after a short delay
+                    setTimeout(initializeDateValidation, 100);
+                    return;
+                }
+                
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Set to midnight to avoid timezone issues
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const minDate = year + '-' + month + '-' + day;
+                
+                // Use stored minDate if available (from inline script)
+                const finalMinDate = window.minEventDate || minDate;
+                
+                // Force set min attribute multiple ways to ensure it works
+                dateInput.setAttribute('min', finalMinDate);
+                dateInput.min = finalMinDate;
+                dateInput.setAttribute('data-min-date', finalMinDate);
+                
+                // If the current value is in the past, set it to today
+                if (dateInput.value) {
+                    if (dateInput.value < finalMinDate) {
+                        dateInput.value = finalMinDate;
+                    }
+                }
+                
+                // Add validation on input change (most important)
+                dateInput.addEventListener('change', function() {
+                    validateAndFixDate(dateInput, finalMinDate);
+                });
+                
+                // Add validation on blur (when user leaves the field)
+                dateInput.addEventListener('blur', function() {
+                    validateAndFixDate(dateInput, finalMinDate);
+                });
+                
+                // Add validation on input (catches typing)
+                dateInput.addEventListener('input', function() {
+                    if (dateInput.value && dateInput.value.length >= 10) {
+                        validateAndFixDate(dateInput, finalMinDate);
+                    }
+                });
+                
+                // Add validation on paste (if user pastes a date)
+                dateInput.addEventListener('paste', function(e) {
+                    setTimeout(function() {
+                        validateAndFixDate(dateInput, finalMinDate);
+                    }, 10);
+                });
+                
+                // Add validation before form submit (critical)
+                const form = document.getElementById('eventForm');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        if (!validateAndFixDate(dateInput, finalMinDate, true)) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return false;
+                        }
+                    });
+                }
+                
+                // Periodic check (every 500ms) to catch any edge cases
+                setInterval(function() {
+                    if (dateInput.value && dateInput.value < finalMinDate) {
+                        dateInput.value = finalMinDate;
+                    }
+                }, 500);
+            }
+            
+            function validateAndFixDate(dateInput, minDate, isSubmit) {
+                if (!dateInput.value) {
+                    return true; // Let required attribute handle empty values
+                }
+                
+                if (dateInput.value < minDate) {
+                    if (isSubmit) {
+                        alert('Event date cannot be in the past. Please select today or a future date.');
+                    } else {
+                        // Show a less intrusive message for non-submit events
+                        const message = 'Date cannot be in the past. Setting to today.';
+                        console.warn(message);
+                    }
+                    dateInput.value = minDate;
+                    dateInput.focus();
+                    // Force re-set min attribute
+                    dateInput.setAttribute('min', minDate);
+                    dateInput.min = minDate;
+                    return false;
+                }
+                
+                return true;
+            }
 
             function updateSessionFields() {
                 const sessionType = document.getElementById('sessionType').value;

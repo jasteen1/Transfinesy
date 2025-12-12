@@ -22,6 +22,7 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -157,6 +158,20 @@ public class AttendanceService {
             .findFirst()
             .orElse(null);
     }
+    
+    /**
+     * Finds attendance by student, event, session, and record type.
+     * This prevents AM/PM records from overwriting each other.
+     */
+    private Attendance findAttendanceByStudentEventSessionAndType(String studID, String eventID, String session, String recordType) {
+        List<Attendance> attendances = repository.findByEvent(eventID);
+        return attendances.stream()
+            .filter(a -> a.getStudID().equals(studID))
+            .filter(a -> (session == null && a.getSession() == null) || (session != null && session.equalsIgnoreCase(a.getSession())))
+            .filter(a -> (recordType == null && a.getRecordType() == null) || (recordType != null && recordType.equals(a.getRecordType())))
+            .findFirst()
+            .orElse(null);
+    }
 
     /**
      * Scans RFID and automatically checks in student.
@@ -258,6 +273,27 @@ public class AttendanceService {
     }
 
     /**
+     * Gets attendance counts by status (optimized - uses SQL aggregation).
+     * @param eventId Optional event ID filter. If null, counts across all events.
+     * @return Map with status names as keys and counts as values
+     */
+    public Map<String, Long> getAttendanceCountsByStatus(String eventId) {
+        return repository.countUniqueStudentsByStatus(eventId);
+    }
+
+    /**
+     * Gets attendance counts by status with course, year level and section filtering.
+     * @param eventId Optional event ID filter. If null, counts across all events.
+     * @param course Optional course filter. If null or "all", no filter applied.
+     * @param yearLevel Optional year level filter. If null or "all", no filter applied.
+     * @param section Optional section filter. If null or "all", no filter applied.
+     * @return Map with status names as keys and counts as values
+     */
+    public Map<String, Long> getAttendanceCountsByStatusFiltered(String eventId, String course, String yearLevel, String section) {
+        return repository.countUniqueStudentsByStatusFiltered(eventId, course, yearLevel, section);
+    }
+
+    /**
      * Saves multiple attendance records for an event.
      */
     public void saveAttendanceBatch(List<Attendance> attendances) {
@@ -352,10 +388,18 @@ public class AttendanceService {
             }
         }
 
-        // Check if attendance already exists
-        Attendance existing = findAttendanceByStudentAndEvent(studID, eventID);
+        // Check if attendance already exists for this session and record type
+        // Look for existing record with same session and record type (TIME_IN or TIME_OUT)
+        String recordType = isTimeIn ? "TIME_IN" : "TIME_OUT";
+        Attendance existing = findAttendanceByStudentEventSessionAndType(studID, eventID, sessionType, recordType);
+        
         if (existing != null) {
-            existing.setCheckInTime(checkInTime);
+            // Update existing record
+            if (isTimeIn) {
+                existing.setCheckInTime(checkInTime);
+            } else {
+                existing.setCheckOutTime(checkInTime);
+            }
             existing.setStatus(status);
             existing.setMinutesLate(minutesLate);
             if (existing.getScanSource() == null) {
@@ -381,7 +425,7 @@ public class AttendanceService {
             
             return existing;
         } else {
-            // Create new attendance record
+            // Create new attendance record with session and record type
             String attendanceID = "ATT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             Attendance attendance = new Attendance(
                 attendanceID,
@@ -389,10 +433,12 @@ public class AttendanceService {
                 eventID,
                 status,
                 minutesLate,
-                checkInTime,
-                null,
+                isTimeIn ? checkInTime : null,
+                isTimeIn ? null : checkInTime,
                 "RFID"
             );
+            attendance.setSession(sessionType != null ? sessionType.toUpperCase() : null);
+            attendance.setRecordType(recordType);
             repository.save(attendance);
             
             // Generate fine if student is late using event-specific fine amounts

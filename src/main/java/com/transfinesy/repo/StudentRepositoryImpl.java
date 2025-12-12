@@ -168,18 +168,28 @@ public class StudentRepositoryImpl implements StudentRepository {
     @Override
     public List<Student> searchByName(String name) {
         List<Student> students = new ArrayList<>();
-        // Name search only matches first_name and last_name, not other fields
+        // Name search matches first_name, last_name, and full name in both orders
+        // Handles "firstname lastname" and "lastname firstname" patterns
         String sql = "SELECT stud_id, first_name, last_name, course, year_level, section, rfid_tag FROM students " +
-                     "WHERE first_name LIKE ? OR last_name LIKE ? OR CONCAT(first_name, ' ', last_name) LIKE ? " +
+                     "WHERE first_name LIKE ? OR last_name LIKE ? " +
+                     "OR CONCAT(first_name, ' ', last_name) LIKE ? " +
+                     "OR CONCAT(last_name, ' ', first_name) LIKE ? " +
+                     "OR CONCAT(first_name, last_name) LIKE ? " +
+                     "OR CONCAT(last_name, first_name) LIKE ? " +
                      "ORDER BY last_name, first_name";
 
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            String searchPattern = "%" + name + "%";
+            String normalizedName = name.trim().replaceAll("\\s+", " ");
+            String searchPattern = "%" + normalizedName + "%";
+            String noSpacePattern = "%" + normalizedName.replaceAll("\\s+", "") + "%";
             pstmt.setString(1, searchPattern);
             pstmt.setString(2, searchPattern);
             pstmt.setString(3, searchPattern);
+            pstmt.setString(4, searchPattern);
+            pstmt.setString(5, noSpacePattern);
+            pstmt.setString(6, noSpacePattern);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -297,17 +307,33 @@ public class StudentRepositoryImpl implements StudentRepository {
     public List<Student> search(String query) {
         List<Student> students = new ArrayList<>();
         // Include RFID in "All Fields" search
+        // Also search full name in both orders for better full name matching
         String sql = "SELECT stud_id, first_name, last_name, course, year_level, section, rfid_tag FROM students " +
                      "WHERE stud_id LIKE ? OR first_name LIKE ? OR last_name LIKE ? OR course LIKE ? OR year_level LIKE ? OR section LIKE ? OR rfid_tag LIKE ? " +
+                     "OR CONCAT(first_name, ' ', last_name) LIKE ? " +
+                     "OR CONCAT(last_name, ' ', first_name) LIKE ? " +
+                     "OR CONCAT(first_name, last_name) LIKE ? " +
+                     "OR CONCAT(last_name, first_name) LIKE ? " +
                      "ORDER BY last_name, first_name";
 
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            String searchPattern = "%" + query + "%";
-            for (int i = 1; i <= 7; i++) {
-                pstmt.setString(i, searchPattern);
-            }
+            String normalizedQuery = query.trim().replaceAll("\\s+", " ");
+            String searchPattern = "%" + normalizedQuery + "%";
+            String noSpacePattern = "%" + normalizedQuery.replaceAll("\\s+", "") + "%";
+            
+            pstmt.setString(1, searchPattern);
+            pstmt.setString(2, searchPattern);
+            pstmt.setString(3, searchPattern);
+            pstmt.setString(4, searchPattern);
+            pstmt.setString(5, searchPattern);
+            pstmt.setString(6, searchPattern);
+            pstmt.setString(7, searchPattern);
+            pstmt.setString(8, searchPattern);
+            pstmt.setString(9, searchPattern);
+            pstmt.setString(10, noSpacePattern);
+            pstmt.setString(11, noSpacePattern);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -392,6 +418,72 @@ public class StudentRepositoryImpl implements StudentRepository {
         }
 
         return students;
+    }
+
+    @Override
+    public List<String> getDistinctYearLevels() {
+        List<String> yearLevels = new ArrayList<>();
+        String sql = "SELECT DISTINCT year_level FROM students WHERE year_level IS NOT NULL AND year_level != '' ORDER BY year_level";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String yearLevel = rs.getString("year_level");
+                if (yearLevel != null && !yearLevel.isEmpty()) {
+                    yearLevels.add(yearLevel);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return yearLevels;
+    }
+
+    @Override
+    public List<String> getDistinctSections() {
+        List<String> sections = new ArrayList<>();
+        String sql = "SELECT DISTINCT section FROM students WHERE section IS NOT NULL AND section != '' ORDER BY section";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String section = rs.getString("section");
+                if (section != null && !section.isEmpty()) {
+                    sections.add(section);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return sections;
+    }
+
+    @Override
+    public List<String> getDistinctCourses() {
+        List<String> courses = new ArrayList<>();
+        String sql = "SELECT DISTINCT course FROM students WHERE course IS NOT NULL AND course != '' ORDER BY course";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String course = rs.getString("course");
+                if (course != null && !course.isEmpty()) {
+                    courses.add(course);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return courses;
     }
 }
 

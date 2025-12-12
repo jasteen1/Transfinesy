@@ -38,7 +38,7 @@ public class AttendanceController {
             return "redirect:/events";
         }
 
-        List<Attendance> attendances = attendanceService.getAttendanceByEvent(eventId);
+        List<Attendance> allAttendances = attendanceService.getAttendanceByEvent(eventId);
         List<Student> allStudents = studentService.getAllStudents();
         
         // Create a map for easy student lookup in template
@@ -47,10 +47,34 @@ public class AttendanceController {
             studentMap.put(student.getStudID(), student);
         }
 
+        // Separate attendances by session (AM, PM, and legacy records without session)
+        List<Attendance> amAttendances = new java.util.ArrayList<>();
+        List<Attendance> pmAttendances = new java.util.ArrayList<>();
+        List<Attendance> legacyAttendances = new java.util.ArrayList<>();
+        
+        for (Attendance attendance : allAttendances) {
+            String session = attendance.getSession();
+            if (session != null) {
+                if ("AM".equalsIgnoreCase(session)) {
+                    amAttendances.add(attendance);
+                } else if ("PM".equalsIgnoreCase(session)) {
+                    pmAttendances.add(attendance);
+                } else {
+                    legacyAttendances.add(attendance);
+                }
+            } else {
+                // Legacy records without session field
+                legacyAttendances.add(attendance);
+            }
+        }
+
         model.addAttribute("pageTitle", "Event Attendance");
         model.addAttribute("activePage", "events");
         model.addAttribute("event", event);
-        model.addAttribute("attendances", attendances);
+        model.addAttribute("attendances", allAttendances); // Keep for backward compatibility
+        model.addAttribute("amAttendances", amAttendances);
+        model.addAttribute("pmAttendances", pmAttendances);
+        model.addAttribute("legacyAttendances", legacyAttendances);
         model.addAttribute("students", allStudents);
         model.addAttribute("studentMap", studentMap);
 

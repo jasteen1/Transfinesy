@@ -1,9 +1,6 @@
 package com.transfinesy.web;
 
-import com.transfinesy.model.Attendance;
-import com.transfinesy.model.AttendanceStatus;
 import com.transfinesy.model.Event;
-import com.transfinesy.model.Student;
 import com.transfinesy.service.AttendanceService;
 import com.transfinesy.service.EventService;
 import com.transfinesy.service.LedgerService;
@@ -15,11 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/dashboard")
@@ -41,114 +35,170 @@ public class DashboardController {
 
     @GetMapping
     public String dashboard(
-            @RequestParam(required = false) String eventId,
-            @RequestParam(required = false) String yearLevel,
-            @RequestParam(required = false) String section,
+            // Financial Summary filters
+            @RequestParam(required = false) String financialCourse,
+            @RequestParam(required = false) String financialYearLevel,
+            @RequestParam(required = false) String financialSection,
+            // Attendance Summary filters
+            @RequestParam(required = false) String attendanceEvent,
+            @RequestParam(required = false) String attendanceCourse,
+            @RequestParam(required = false) String attendanceYearLevel,
+            @RequestParam(required = false) String attendanceSection,
+            // Community Service Summary filters
+            @RequestParam(required = false) String serviceCourse,
+            @RequestParam(required = false) String serviceYearLevel,
+            @RequestParam(required = false) String serviceSection,
             Model model) {
-        YearMonth currentMonth = YearMonth.now();
         
-        // Get all events for filter dropdown
+        // Get all events and filter options for dropdowns
         List<Event> allEvents = eventService.getAllEvents();
+        List<String> courses = studentService.getDistinctCourses();
+        List<String> yearLevels = studentService.getDistinctYearLevels();
+        List<String> sections = studentService.getDistinctSections();
         
-        // Get statistics
-        double monthly = reportService.getMonthlyCollections(currentMonth);
-        double semester = reportService.getSemesterCollections(currentMonth);
+        // ========== FINANCIAL SUMMARY ==========
+        // Apply financial filters (course, year level, section)
+        boolean hasFinancialFilters = (financialCourse != null && !financialCourse.isEmpty() && !financialCourse.equals("all")) ||
+                                     (financialYearLevel != null && !financialYearLevel.isEmpty() && !financialYearLevel.equals("all")) ||
+                                     (financialSection != null && !financialSection.isEmpty() && !financialSection.equals("all"));
         
-        // Total fines - sum all fines (not filtered by event for "All Events")
-        double totalFines = reportService.getTotalFinesIssued();
+        double totalFines;
+        double totalPayments;
+        double totalServiceCredits;
         
-        // If event filter is applied, calculate fines for that event only
-        if (eventId != null && !eventId.isEmpty() && !eventId.equals("all")) {
-            totalFines = reportService.getTotalFinesByEvent(eventId);
-        }
-        
-        // Community Service statistics
-        int totalServiceHours = reportService.getTotalServiceHours();
-        double totalServiceCredits = reportService.getTotalServiceCredits();
-        int monthlyServiceHours = reportService.getServiceHoursForMonth(currentMonth);
-        double monthlyServiceCredits = reportService.getServiceCreditsForMonth(currentMonth);
-
-        // Count attendance statuses - filter by event if selected
-        // Count unique students per status to avoid double counting
-        List<Attendance> allAttendance = attendanceService.getAllAttendance();
-        if (eventId != null && !eventId.isEmpty() && !eventId.equals("all")) {
-            allAttendance = allAttendance.stream()
-                .filter(a -> a.getEventID() != null && a.getEventID().equals(eventId))
-                .collect(Collectors.toList());
-        }
-        
-        // Count unique students per status (one student can only be counted once per event)
-        long presentCount = allAttendance.stream()
-            .filter(a -> a.getStatus() == AttendanceStatus.PRESENT)
-            .map(Attendance::getStudID)
-            .distinct()
-            .count();
-        long lateCount = allAttendance.stream()
-            .filter(a -> a.getStatus() == AttendanceStatus.LATE)
-            .map(Attendance::getStudID)
-            .distinct()
-            .count();
-        long absentCount = allAttendance.stream()
-            .filter(a -> a.getStatus() == AttendanceStatus.ABSENT)
-            .map(Attendance::getStudID)
-            .distinct()
-            .count();
-
-        // Get course breakdown - use filtered methods if year level or section filter is applied
-        List<Student> allStudents = studentService.getAllStudents();
-        Map<String, Double> finesByCourse;
-        Map<String, Double> paymentsByCourse;
-        
-        // Use filtered methods if year level or section filter is applied
-        if ((yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) ||
-            (section != null && !section.isEmpty() && !section.equals("all"))) {
-            // Use filtered methods that properly calculate fines/payments for filtered students
-            finesByCourse = reportService.getTotalsByCourseFiltered(yearLevel, section);
-            paymentsByCourse = reportService.getPaymentsByCourseFiltered(yearLevel, section);
+        if (hasFinancialFilters) {
+            totalFines = reportService.getTotalFinesIssuedFiltered(
+                financialCourse != null && !financialCourse.equals("all") ? financialCourse : null,
+                financialYearLevel != null && !financialYearLevel.equals("all") ? financialYearLevel : null,
+                financialSection != null && !financialSection.equals("all") ? financialSection : null
+            );
+            totalPayments = reportService.getTotalPaymentsFiltered(
+                financialCourse != null && !financialCourse.equals("all") ? financialCourse : null,
+                financialYearLevel != null && !financialYearLevel.equals("all") ? financialYearLevel : null,
+                financialSection != null && !financialSection.equals("all") ? financialSection : null
+            );
+            totalServiceCredits = reportService.getTotalServiceCreditsFiltered(
+                financialCourse != null && !financialCourse.equals("all") ? financialCourse : null,
+                financialYearLevel != null && !financialYearLevel.equals("all") ? financialYearLevel : null,
+                financialSection != null && !financialSection.equals("all") ? financialSection : null
+            );
         } else {
-            // No filters - get all totals
-            finesByCourse = reportService.getTotalsByCourse();
-            paymentsByCourse = reportService.getPaymentsByCourse();
+            totalFines = reportService.getTotalFinesIssued();
+            totalPayments = reportService.getTotalPayments();
+            totalServiceCredits = reportService.getTotalServiceCredits();
+        }
+        
+        // Outstanding Balance = Total Fines - Total Payments - Total Service Credits
+        double outstandingBalance = reportService.calculateOutstandingBalance(totalFines, totalPayments, totalServiceCredits);
+        
+        // ========== ATTENDANCE SUMMARY ==========
+        // Apply attendance filters (event, course, year level, section)
+        String attendanceEventFilter = (attendanceEvent != null && !attendanceEvent.isEmpty() && !attendanceEvent.equals("all")) ? attendanceEvent : null;
+        boolean hasAttendanceFilters = (attendanceCourse != null && !attendanceCourse.isEmpty() && !attendanceCourse.equals("all")) ||
+                                      (attendanceYearLevel != null && !attendanceYearLevel.isEmpty() && !attendanceYearLevel.equals("all")) ||
+                                      (attendanceSection != null && !attendanceSection.isEmpty() && !attendanceSection.equals("all"));
+        
+        Map<String, Long> attendanceCounts;
+        if (attendanceEventFilter != null || hasAttendanceFilters) {
+            attendanceCounts = attendanceService.getAttendanceCountsByStatusFiltered(
+                attendanceEventFilter,
+                attendanceCourse != null && !attendanceCourse.equals("all") ? attendanceCourse : null,
+                attendanceYearLevel != null && !attendanceYearLevel.equals("all") ? attendanceYearLevel : null,
+                attendanceSection != null && !attendanceSection.equals("all") ? attendanceSection : null
+            );
+        } else {
+            attendanceCounts = attendanceService.getAttendanceCountsByStatus(null);
+        }
+        
+        long presentCount = attendanceCounts.getOrDefault("PRESENT", 0L);
+        long lateCount = attendanceCounts.getOrDefault("LATE", 0L);
+        long absentCount = attendanceCounts.getOrDefault("ABSENT", 0L);
+        
+        // Get selected event name for display
+        String selectedAttendanceEventName = "All Events";
+        if (attendanceEventFilter != null) {
+            Event selectedEvent = eventService.getEventById(attendanceEventFilter);
+            if (selectedEvent != null) {
+                selectedAttendanceEventName = selectedEvent.getEventName();
+            }
+        }
+        
+        // ========== COMMUNITY SERVICE SUMMARY ==========
+        // Apply community service filters (course, year level, section)
+        boolean hasServiceFilters = (serviceCourse != null && !serviceCourse.isEmpty() && !serviceCourse.equals("all")) ||
+                                   (serviceYearLevel != null && !serviceYearLevel.isEmpty() && !serviceYearLevel.equals("all")) ||
+                                   (serviceSection != null && !serviceSection.isEmpty() && !serviceSection.equals("all"));
+        
+        int totalServiceHours;
+        double serviceCredits;
+        long serviceStudentCount;
+        
+        if (hasServiceFilters) {
+            totalServiceHours = reportService.getTotalServiceHoursFiltered(
+                serviceCourse != null && !serviceCourse.equals("all") ? serviceCourse : null,
+                serviceYearLevel != null && !serviceYearLevel.equals("all") ? serviceYearLevel : null,
+                serviceSection != null && !serviceSection.equals("all") ? serviceSection : null
+            );
+            serviceCredits = reportService.getTotalServiceCreditsFiltered(
+                serviceCourse != null && !serviceCourse.equals("all") ? serviceCourse : null,
+                serviceYearLevel != null && !serviceYearLevel.equals("all") ? serviceYearLevel : null,
+                serviceSection != null && !serviceSection.equals("all") ? serviceSection : null
+            );
+            serviceStudentCount = reportService.getServiceStudentCountFiltered(
+                serviceCourse != null && !serviceCourse.equals("all") ? serviceCourse : null,
+                serviceYearLevel != null && !serviceYearLevel.equals("all") ? serviceYearLevel : null,
+                serviceSection != null && !serviceSection.equals("all") ? serviceSection : null
+            );
+        } else {
+            totalServiceHours = reportService.getTotalServiceHours();
+            serviceCredits = reportService.getTotalServiceCredits();
+            serviceStudentCount = reportService.getServiceStudentCount();
         }
 
-        // Get unique year levels and sections for filters
-        List<String> yearLevels = allStudents.stream()
-            .map(Student::getYearLevel)
-            .filter(yl -> yl != null && !yl.isEmpty())
-            .distinct()
-            .sorted()
-            .collect(Collectors.toList());
-        
-        List<String> sections = allStudents.stream()
-            .map(Student::getSection)
-            .filter(s -> s != null && !s.isEmpty())
-            .distinct()
-            .sorted()
-            .collect(Collectors.toList());
-
+        // Add all attributes to model
         model.addAttribute("pageTitle", "Dashboard");
         model.addAttribute("activePage", "dashboard");
-        model.addAttribute("monthlyCollections", monthly);
-        model.addAttribute("semesterCollections", semester);
+        
+        // Financial Summary data
         model.addAttribute("totalFines", totalFines);
+        model.addAttribute("totalPayments", totalPayments);
+        model.addAttribute("totalServiceCredits", totalServiceCredits);
+        model.addAttribute("outstandingBalance", outstandingBalance);
+        
+        // Attendance Summary data
         model.addAttribute("presentCount", presentCount);
         model.addAttribute("lateCount", lateCount);
         model.addAttribute("absentCount", absentCount);
-        model.addAttribute("finesByCourse", finesByCourse);
-        model.addAttribute("paymentsByCourse", paymentsByCourse);
+        model.addAttribute("selectedAttendanceEventName", selectedAttendanceEventName);
+        model.addAttribute("hasAttendanceEventFilter", attendanceEventFilter != null);
+        
+        // Community Service Summary data
+        model.addAttribute("totalServiceHours", totalServiceHours);
+        model.addAttribute("serviceCredits", serviceCredits);
+        model.addAttribute("serviceStudentCount", serviceStudentCount);
+        
+        // Filter options for all sections
         model.addAttribute("allEvents", allEvents);
-        model.addAttribute("selectedEventId", eventId != null ? eventId : "all");
+        model.addAttribute("courses", courses);
         model.addAttribute("yearLevels", yearLevels);
         model.addAttribute("sections", sections);
-        model.addAttribute("selectedYearLevel", yearLevel != null ? yearLevel : "all");
-        model.addAttribute("selectedSection", section != null ? section : "all");
-        // Community Service stats
-        model.addAttribute("totalServiceHours", totalServiceHours);
-        model.addAttribute("totalServiceCredits", totalServiceCredits);
-        model.addAttribute("monthlyServiceHours", monthlyServiceHours);
-        model.addAttribute("monthlyServiceCredits", monthlyServiceCredits);
+        
+        // Financial filter values
+        model.addAttribute("financialCourse", financialCourse != null ? financialCourse : "all");
+        model.addAttribute("financialYearLevel", financialYearLevel != null ? financialYearLevel : "all");
+        model.addAttribute("financialSection", financialSection != null ? financialSection : "all");
+        
+        // Attendance filter values
+        model.addAttribute("attendanceEvent", attendanceEvent != null ? attendanceEvent : "all");
+        model.addAttribute("attendanceCourse", attendanceCourse != null ? attendanceCourse : "all");
+        model.addAttribute("attendanceYearLevel", attendanceYearLevel != null ? attendanceYearLevel : "all");
+        model.addAttribute("attendanceSection", attendanceSection != null ? attendanceSection : "all");
+        
+        // Community Service filter values
+        model.addAttribute("serviceCourse", serviceCourse != null ? serviceCourse : "all");
+        model.addAttribute("serviceYearLevel", serviceYearLevel != null ? serviceYearLevel : "all");
+        model.addAttribute("serviceSection", serviceSection != null ? serviceSection : "all");
 
         return "dashboard/index";
     }
 }
-

@@ -58,6 +58,28 @@
             color: var(--error);
             border: 1px solid var(--error);
         }
+        .attendance-section {
+            margin-bottom: var(--spacing-xl);
+        }
+        .attendance-table-section {
+            transition: all 0.3s ease;
+        }
+        .badge-info {
+            background-color: #3B82F6;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .badge-secondary {
+            background-color: #6B7280;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -217,40 +239,211 @@
 
         <!-- Attendance Table -->
         <div class="card">
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Name</th>
-                            <th>Course</th>
-                            <th>Year</th>
-                            <th>Section</th>
-                            <th>Status</th>
-                            <th>Check-In Time</th>
-                            <th>Source</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:if="${attendances.isEmpty()}">
-                            <td colspan="8" style="text-align: center; padding: var(--spacing-xl); color: #6B7280;">No attendance records yet.</td>
-                        </tr>
-                        <tr th:each="attendance : ${attendances}" th:with="student=${studentMap.get(attendance.studID)}">
-                            <td th:text="${attendance.studID}">STUD001</td>
-                            <td th:text="${student != null ? student.fullName : attendance.studID}">Student Name</td>
-                            <td th:text="${student != null ? student.course : '-'}">-</td>
-                            <td th:text="${student != null ? student.yearLevel : '-'}">-</td>
-                            <td th:text="${student != null ? student.section : '-'}">-</td>
-                            <td>
-                                <span th:if="${attendance.status.toString() == 'PRESENT'}" class="badge badge-success">PRESENT</span>
-                                <span th:if="${attendance.status.toString() == 'LATE'}" class="badge badge-warning">LATE</span>
-                                <span th:if="${attendance.status.toString() == 'ABSENT'}" class="badge badge-error">ABSENT</span>
-                            </td>
-                            <td th:text="${attendance.checkInTime != null ? #temporals.format(attendance.checkInTime, 'yyyy-MM-dd HH:mm') : 'N/A'}">N/A</td>
-                            <td th:text="${attendance.scanSource ?: 'MANUAL'}">MANUAL</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-md);">
+                <h3 class="card-title">Attendance Records</h3>
+                <div style="display: flex; gap: var(--spacing-md); align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="attendanceSearch" class="form-control" 
+                           placeholder="Search by Student ID, Name, Course..." 
+                           style="min-width: 250px;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="clearSearch()">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- AM Attendance Section -->
+                <div th:if="${event.sessionType.name() == 'MORNING_ONLY' or event.sessionType.name() == 'BOTH'}" 
+                     class="attendance-section" data-session="AM">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: var(--primary); margin: 0;">
+                            <i class="bi bi-sunrise"></i> Morning (AM) Session
+                        </h4>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleSection('AM')">
+                            <i class="bi bi-chevron-down" id="toggleIconAM"></i>
+                            <span id="toggleTextAM">Show Less</span>
+                        </button>
+                    </div>
+                    <div id="amSection" class="attendance-table-section">
+                        <div class="table-wrapper">
+                            <table class="table" id="amTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Course</th>
+                                        <th>Year</th>
+                                        <th>Section</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${#lists.isEmpty(amAttendances)}">
+                                        <td colspan="9" style="text-align: center; padding: var(--spacing-xl); color: #6B7280;">
+                                            No AM attendance records yet.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="attendance : ${amAttendances}" 
+                                        th:with="student=${studentMap.get(attendance.studID)}"
+                                        class="attendance-row"
+                                        data-student-id="${attendance.studID}"
+                                        data-student-name="${student != null ? student.fullName : attendance.studID}"
+                                        data-course="${student != null ? student.course : ''}">
+                                        <td th:text="${attendance.studID}">STUD001</td>
+                                        <td th:text="${student != null ? student.fullName : attendance.studID}">Student Name</td>
+                                        <td th:text="${student != null ? student.course : '-'}">-</td>
+                                        <td th:text="${student != null ? student.yearLevel : '-'}">-</td>
+                                        <td th:text="${student != null ? student.section : '-'}">-</td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${attendance.recordType == 'TIME_IN' ? 'badge-info' : 'badge-secondary'}"
+                                                  th:text="${attendance.recordType ?: 'N/A'}">TIME_IN</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${attendance.status.toString() == 'PRESENT'}" class="badge badge-success">PRESENT</span>
+                                            <span th:if="${attendance.status.toString() == 'LATE'}" class="badge badge-warning">LATE</span>
+                                            <span th:if="${attendance.status.toString() == 'ABSENT'}" class="badge badge-error">ABSENT</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${attendance.recordType == 'TIME_IN' and attendance.checkInTime != null}" 
+                                                  th:text="${#temporals.format(attendance.checkInTime, 'HH:mm')}">08:00</span>
+                                            <span th:if="${attendance.recordType == 'TIME_OUT' and attendance.checkOutTime != null}" 
+                                                  th:text="${#temporals.format(attendance.checkOutTime, 'HH:mm')}">12:00</span>
+                                            <span th:if="${attendance.checkInTime == null and attendance.checkOutTime == null}">N/A</span>
+                                        </td>
+                                        <td th:text="${attendance.scanSource ?: 'MANUAL'}">MANUAL</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PM Attendance Section -->
+                <div th:if="${event.sessionType.name() == 'AFTERNOON_ONLY' or event.sessionType.name() == 'BOTH'}" 
+                     class="attendance-section" data-session="PM"
+                     th:style="${event.sessionType.name() == 'AFTERNOON_ONLY' or event.sessionType.name() == 'BOTH' ? '' : 'margin-top: var(--spacing-xl);'}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: var(--primary); margin: 0;">
+                            <i class="bi bi-sunset"></i> Afternoon (PM) Session
+                        </h4>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleSection('PM')">
+                            <i class="bi bi-chevron-down" id="toggleIconPM"></i>
+                            <span id="toggleTextPM">Show Less</span>
+                        </button>
+                    </div>
+                    <div id="pmSection" class="attendance-table-section">
+                        <div class="table-wrapper">
+                            <table class="table" id="pmTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Course</th>
+                                        <th>Year</th>
+                                        <th>Section</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:if="${#lists.isEmpty(pmAttendances)}">
+                                        <td colspan="9" style="text-align: center; padding: var(--spacing-xl); color: #6B7280;">
+                                            No PM attendance records yet.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="attendance : ${pmAttendances}" 
+                                        th:with="student=${studentMap.get(attendance.studID)}"
+                                        class="attendance-row"
+                                        data-student-id="${attendance.studID}"
+                                        data-student-name="${student != null ? student.fullName : attendance.studID}"
+                                        data-course="${student != null ? student.course : ''}">
+                                        <td th:text="${attendance.studID}">STUD001</td>
+                                        <td th:text="${student != null ? student.fullName : attendance.studID}">Student Name</td>
+                                        <td th:text="${student != null ? student.course : '-'}">-</td>
+                                        <td th:text="${student != null ? student.yearLevel : '-'}">-</td>
+                                        <td th:text="${student != null ? student.section : '-'}">-</td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${attendance.recordType == 'TIME_IN' ? 'badge-info' : 'badge-secondary'}"
+                                                  th:text="${attendance.recordType ?: 'N/A'}">TIME_IN</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${attendance.status.toString() == 'PRESENT'}" class="badge badge-success">PRESENT</span>
+                                            <span th:if="${attendance.status.toString() == 'LATE'}" class="badge badge-warning">LATE</span>
+                                            <span th:if="${attendance.status.toString() == 'ABSENT'}" class="badge badge-error">ABSENT</span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${attendance.recordType == 'TIME_IN' and attendance.checkInTime != null}" 
+                                                  th:text="${#temporals.format(attendance.checkInTime, 'HH:mm')}">13:00</span>
+                                            <span th:if="${attendance.recordType == 'TIME_OUT' and attendance.checkOutTime != null}" 
+                                                  th:text="${#temporals.format(attendance.checkOutTime, 'HH:mm')}">17:00</span>
+                                            <span th:if="${attendance.checkInTime == null and attendance.checkOutTime == null}">N/A</span>
+                                        </td>
+                                        <td th:text="${attendance.scanSource ?: 'MANUAL'}">MANUAL</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legacy/All Attendance Section (for records without session) -->
+                <div th:if="${legacyAttendances != null and legacyAttendances.size() > 0}" class="attendance-section" data-session="LEGACY"
+                     style="margin-top: var(--spacing-xl);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: #6B7280; margin: 0;">
+                            <i class="bi bi-clock-history"></i> Legacy Records (No Session)
+                        </h4>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleSection('LEGACY')">
+                            <i class="bi bi-chevron-down" id="toggleIconLEGACY"></i>
+                            <span id="toggleTextLEGACY">Show Less</span>
+                        </button>
+                    </div>
+                    <div id="legacySection" class="attendance-table-section">
+                        <div class="table-wrapper">
+                            <table class="table" id="legacyTable">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Course</th>
+                                        <th>Year</th>
+                                        <th>Section</th>
+                                        <th>Status</th>
+                                        <th>Check-In Time</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="attendance : ${legacyAttendances}" 
+                                        th:with="student=${studentMap.get(attendance.studID)}"
+                                        class="attendance-row"
+                                        data-student-id="${attendance.studID}"
+                                        data-student-name="${student != null ? student.fullName : attendance.studID}"
+                                        data-course="${student != null ? student.course : ''}">
+                                        <td th:text="${attendance.studID}">STUD001</td>
+                                        <td th:text="${student != null ? student.fullName : attendance.studID}">Student Name</td>
+                                        <td th:text="${student != null ? student.course : '-'}">-</td>
+                                        <td th:text="${student != null ? student.yearLevel : '-'}">-</td>
+                                        <td th:text="${student != null ? student.section : '-'}">-</td>
+                                        <td>
+                                            <span th:if="${attendance.status.toString() == 'PRESENT'}" class="badge badge-success">PRESENT</span>
+                                            <span th:if="${attendance.status.toString() == 'LATE'}" class="badge badge-warning">LATE</span>
+                                            <span th:if="${attendance.status.toString() == 'ABSENT'}" class="badge badge-error">ABSENT</span>
+                                        </td>
+                                        <td th:text="${attendance.checkInTime != null ? #temporals.format(attendance.checkInTime, 'yyyy-MM-dd HH:mm') : 'N/A'}">N/A</td>
+                                        <td th:text="${attendance.scanSource ?: 'MANUAL'}">MANUAL</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -403,6 +596,83 @@
                     rfidScanner.classList.remove('active');
                 }, 5000);
             }
+
+            // Search functionality
+            const searchInput = document.getElementById('attendanceSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    filterAttendanceTable(this.value.trim().toLowerCase());
+                });
+            }
+
+            function filterAttendanceTable(searchTerm) {
+                const rows = document.querySelectorAll('.attendance-row');
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    const studentId = (row.getAttribute('data-student-id') || '').toLowerCase();
+                    const studentName = (row.getAttribute('data-student-name') || '').toLowerCase();
+                    const course = (row.getAttribute('data-course') || '').toLowerCase();
+                    const rowText = row.textContent.toLowerCase();
+                    
+                    const matches = !searchTerm || 
+                        studentId.includes(searchTerm) || 
+                        studentName.includes(searchTerm) || 
+                        course.includes(searchTerm) ||
+                        rowText.includes(searchTerm);
+                    
+                    row.style.display = matches ? '' : 'none';
+                    if (matches) visibleCount++;
+                });
+                
+                // Show/hide "no results" message if needed
+                const tables = document.querySelectorAll('.table tbody');
+                tables.forEach(tbody => {
+                    const noDataRow = tbody.querySelector('tr[colspan]');
+                    if (noDataRow && searchTerm) {
+                        noDataRow.style.display = visibleCount === 0 ? '' : 'none';
+                        if (visibleCount === 0) {
+                            noDataRow.querySelector('td').textContent = 'No records match your search.';
+                        }
+                    }
+                });
+            }
+
+            function clearSearch() {
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterAttendanceTable('');
+                }
+            }
+
+            // Show More/Less toggle functionality
+            function toggleSection(session) {
+                const sectionId = session.toLowerCase() + 'Section';
+                const section = document.getElementById(sectionId);
+                const icon = document.getElementById('toggleIcon' + session);
+                const text = document.getElementById('toggleText' + session);
+                
+                if (section) {
+                    const isHidden = section.style.display === 'none';
+                    section.style.display = isHidden ? 'block' : 'none';
+                    
+                    if (icon) {
+                        icon.className = isHidden ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+                    }
+                    if (text) {
+                        text.textContent = isHidden ? 'Show Less' : 'Show More';
+                    }
+                }
+            }
+
+            // Initialize: Show all sections by default, but allow collapsing
+            document.addEventListener('DOMContentLoaded', function() {
+                // All sections visible by default
+                const sections = document.querySelectorAll('.attendance-table-section');
+                sections.forEach(section => {
+                    section.style.display = 'block';
+                });
+            });
         </script>
     </th:block>
 </body>

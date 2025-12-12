@@ -178,5 +178,43 @@ public class FineRepositoryImpl implements FineRepository {
             throw new RuntimeException("Failed to delete fine", e);
         }
     }
+
+    @Override
+    public double getTotalSum() {
+        String sql = "SELECT COALESCE(SUM(amount), 0) as total FROM fines";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
+
+    @Override
+    public double getSumByEvent(String eventID) {
+        String sql = "SELECT COALESCE(SUM(amount), 0) as total FROM fines WHERE event_id = ?";
+
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, eventID);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
 }
 

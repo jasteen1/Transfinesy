@@ -1,6 +1,7 @@
 package com.transfinesy.repo;
 
 import com.transfinesy.model.Payment;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -13,5 +14,19 @@ public interface PaymentRepository {
     void save(Payment p);
     void update(Payment p);
     void delete(String paymentID);
+    
+    /**
+     * Gets sum of payments for a specific month (optimized SQL aggregation).
+     * @param startDate Start date of the month
+     * @param endDate End date of the month
+     * @return Sum of payment amounts
+     */
+    double getSumByDateRange(LocalDate startDate, LocalDate endDate);
+    
+    /**
+     * Gets sum of all payments (optimized SQL aggregation).
+     * @return Sum of all payment amounts
+     */
+    double getTotalSum();
 }
 

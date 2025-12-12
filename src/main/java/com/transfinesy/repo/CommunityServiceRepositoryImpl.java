@@ -192,5 +192,83 @@ public class CommunityServiceRepositoryImpl implements CommunityServiceRepositor
             throw new RuntimeException("Failed to delete community service", e);
         }
     }
+
+    @Override
+    public int getTotalHours() {
+        String sql = "SELECT COALESCE(SUM(hours_rendered), 0) as total FROM community_service";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    @Override
+    public double getTotalCredits() {
+        String sql = "SELECT COALESCE(SUM(credit_amount), 0) as total FROM community_service";
+
+        try (Connection conn = DBConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
+
+    @Override
+    public int getHoursByDateRange(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT COALESCE(SUM(hours_rendered), 0) as total FROM community_service WHERE date >= ? AND date <= ?";
+
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setDate(1, Date.valueOf(startDate));
+            pstmt.setDate(2, Date.valueOf(endDate));
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    @Override
+    public double getCreditsByDateRange(LocalDate startDate, LocalDate endDate) {
+        String sql = "SELECT COALESCE(SUM(credit_amount), 0) as total FROM community_service WHERE date >= ? AND date <= ?";
+
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setDate(1, Date.valueOf(startDate));
+            pstmt.setDate(2, Date.valueOf(endDate));
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0.0;
+    }
 }
 

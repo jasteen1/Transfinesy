@@ -37,15 +37,52 @@ public class ReportService {
     }
 
     /**
-     * Gets total collections for a specific month.
+     * Gets total collections for a specific month (OPTIMIZED: uses SQL aggregation).
      */
     public double getMonthlyCollections(YearMonth yearMonth) {
-        List<Payment> allPayments = paymentRepository.findAll();
         LocalDate start = yearMonth.atDay(1);
         LocalDate end = yearMonth.atEndOfMonth();
+        return paymentRepository.getSumByDateRange(start, end);
+    }
 
+    /**
+     * Gets total collections for a specific month filtered by year level and section.
+     */
+    public double getMonthlyCollectionsFiltered(YearMonth yearMonth, String yearLevel, String section) {
+        LocalDate start = yearMonth.atDay(1);
+        LocalDate end = yearMonth.atEndOfMonth();
+        List<Payment> allPayments = paymentRepository.findAll();
+        
+        // Build student filter maps
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        for (Student student : allStudents) {
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
+        // Filter and sum payments
         return allPayments.stream()
                 .filter(p -> !p.getDate().isBefore(start) && !p.getDate().isAfter(end))
+                .filter(p -> {
+                    String studentYear = studentYearMap.get(p.getStudID());
+                    String studentSection = studentSectionMap.get(p.getStudID());
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
                 .mapToDouble(Payment::getAmount)
                 .sum();
     }
@@ -73,23 +110,335 @@ public class ReportService {
     }
 
     /**
-     * Gets total fines issued (all time or for a period).
+     * Gets total collections for the current semester filtered by year level and section.
+     */
+    public double getSemesterCollectionsFiltered(YearMonth currentMonth, String yearLevel, String section) {
+        YearMonth semesterStart;
+        int month = currentMonth.getMonthValue();
+        if (month >= 1 && month <= 5) {
+            semesterStart = YearMonth.of(currentMonth.getYear(), 1);
+        } else {
+            semesterStart = YearMonth.of(currentMonth.getYear(), 6);
+        }
+
+        double total = 0.0;
+        YearMonth current = semesterStart;
+        while (!current.isAfter(currentMonth)) {
+            total += getMonthlyCollectionsFiltered(current, yearLevel, section);
+            current = current.plusMonths(1);
+        }
+        return total;
+    }
+
+    /**
+     * Gets total fines issued (all time or for a period) - OPTIMIZED: uses SQL aggregation.
      */
     public double getTotalFinesIssued() {
+        return fineRepository.getTotalSum();
+    }
+
+    /**
+     * Gets total fines issued filtered by course, year level and section.
+     */
+    public double getTotalFinesIssuedFiltered(String course, String yearLevel, String section) {
         List<Fine> allFines = fineRepository.findAll();
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentCourseMap = new HashMap<>();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        
+        for (Student student : allStudents) {
+            studentCourseMap.put(student.getStudID(), student.getCourse());
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
         return allFines.stream()
+                .filter(f -> {
+                    String studentCourse = studentCourseMap.get(f.getStudID());
+                    String studentYear = studentYearMap.get(f.getStudID());
+                    String studentSection = studentSectionMap.get(f.getStudID());
+                    
+                    if (course != null && !course.isEmpty() && !course.equals("all")) {
+                        if (studentCourse == null || !studentCourse.equals(course)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
                 .mapToDouble(Fine::getFineAmount)
                 .sum();
     }
     
     /**
-     * Gets total fines for a specific event.
+     * Gets total fines for a specific event - OPTIMIZED: uses SQL aggregation.
      */
     public double getTotalFinesByEvent(String eventID) {
+        return fineRepository.getSumByEvent(eventID);
+    }
+
+    /**
+     * Gets total fines for a specific event filtered by year level and section.
+     */
+    public double getTotalFinesByEventFiltered(String eventID, String yearLevel, String section) {
         List<Fine> eventFines = fineRepository.findByEvent(eventID);
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        
+        for (Student student : allStudents) {
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
         return eventFines.stream()
+                .filter(f -> {
+                    String studentYear = studentYearMap.get(f.getStudID());
+                    String studentSection = studentSectionMap.get(f.getStudID());
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
                 .mapToDouble(Fine::getFineAmount)
                 .sum();
+    }
+
+    /**
+     * Gets total payments collected (all time) - OPTIMIZED: uses SQL aggregation.
+     */
+    public double getTotalPayments() {
+        return paymentRepository.getTotalSum();
+    }
+
+    /**
+     * Gets total payments collected filtered by course, year level and section.
+     */
+    public double getTotalPaymentsFiltered(String course, String yearLevel, String section) {
+        List<Payment> allPayments = paymentRepository.findAll();
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentCourseMap = new HashMap<>();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        
+        for (Student student : allStudents) {
+            studentCourseMap.put(student.getStudID(), student.getCourse());
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
+        return allPayments.stream()
+                .filter(p -> {
+                    String studentCourse = studentCourseMap.get(p.getStudID());
+                    String studentYear = studentYearMap.get(p.getStudID());
+                    String studentSection = studentSectionMap.get(p.getStudID());
+                    
+                    if (course != null && !course.isEmpty() && !course.equals("all")) {
+                        if (studentCourse == null || !studentCourse.equals(course)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
+                .mapToDouble(Payment::getAmount)
+                .sum();
+    }
+
+    /**
+     * Gets total service credits filtered by course, year level and section.
+     */
+    public double getTotalServiceCreditsFiltered(String course, String yearLevel, String section) {
+        List<CommunityService> allServices = serviceRepository.findAll();
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentCourseMap = new HashMap<>();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        
+        for (Student student : allStudents) {
+            studentCourseMap.put(student.getStudID(), student.getCourse());
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
+        return allServices.stream()
+                .filter(s -> {
+                    String studentCourse = studentCourseMap.get(s.getStudID());
+                    String studentYear = studentYearMap.get(s.getStudID());
+                    String studentSection = studentSectionMap.get(s.getStudID());
+                    
+                    if (course != null && !course.isEmpty() && !course.equals("all")) {
+                        if (studentCourse == null || !studentCourse.equals(course)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
+                .mapToDouble(CommunityService::getCreditAmount)
+                .sum();
+    }
+
+    /**
+     * Gets total service hours filtered by course, year level and section.
+     */
+    public int getTotalServiceHoursFiltered(String course, String yearLevel, String section) {
+        List<CommunityService> allServices = serviceRepository.findAll();
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentCourseMap = new HashMap<>();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        
+        for (Student student : allStudents) {
+            studentCourseMap.put(student.getStudID(), student.getCourse());
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
+        return allServices.stream()
+                .filter(s -> {
+                    String studentCourse = studentCourseMap.get(s.getStudID());
+                    String studentYear = studentYearMap.get(s.getStudID());
+                    String studentSection = studentSectionMap.get(s.getStudID());
+                    
+                    if (course != null && !course.isEmpty() && !course.equals("all")) {
+                        if (studentCourse == null || !studentCourse.equals(course)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
+                .mapToInt(CommunityService::getHoursRendered)
+                .sum();
+    }
+
+    /**
+     * Gets count of unique students who rendered community service.
+     */
+    public long getServiceStudentCount() {
+        List<CommunityService> allServices = serviceRepository.findAll();
+        return allServices.stream()
+                .map(CommunityService::getStudID)
+                .distinct()
+                .count();
+    }
+
+    /**
+     * Gets count of unique students who rendered community service (filtered by course, year level and section).
+     */
+    public long getServiceStudentCountFiltered(String course, String yearLevel, String section) {
+        List<CommunityService> allServices = serviceRepository.findAll();
+        List<Student> allStudents = studentRepository.findAll();
+        Map<String, String> studentCourseMap = new HashMap<>();
+        Map<String, String> studentYearMap = new HashMap<>();
+        Map<String, String> studentSectionMap = new HashMap<>();
+        
+        for (Student student : allStudents) {
+            studentCourseMap.put(student.getStudID(), student.getCourse());
+            studentYearMap.put(student.getStudID(), student.getYearLevel());
+            studentSectionMap.put(student.getStudID(), student.getSection());
+        }
+        
+        return allServices.stream()
+                .filter(s -> {
+                    String studentCourse = studentCourseMap.get(s.getStudID());
+                    String studentYear = studentYearMap.get(s.getStudID());
+                    String studentSection = studentSectionMap.get(s.getStudID());
+                    
+                    if (course != null && !course.isEmpty() && !course.equals("all")) {
+                        if (studentCourse == null || !studentCourse.equals(course)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (yearLevel != null && !yearLevel.isEmpty() && !yearLevel.equals("all")) {
+                        if (studentYear == null || !studentYear.equals(yearLevel)) {
+                            return false;
+                        }
+                    }
+                    
+                    if (section != null && !section.isEmpty() && !section.equals("all")) {
+                        if (studentSection == null || !studentSection.equals(section)) {
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                })
+                .map(CommunityService::getStudID)
+                .distinct()
+                .count();
+    }
+
+    /**
+     * Calculates outstanding balance: Total Fines - Total Payments - Total Service Credits
+     * @param totalFines Total fines issued
+     * @param totalPayments Total payments collected
+     * @param totalServiceCredits Total service credit value
+     * @return Outstanding balance
+     */
+    public double calculateOutstandingBalance(double totalFines, double totalPayments, double totalServiceCredits) {
+        return totalFines - totalPayments - totalServiceCredits;
     }
     
     /**
@@ -191,23 +540,17 @@ public class ReportService {
     }
 
     /**
-     * Gets total service credits issued (monetary value).
+     * Gets total service credits issued (monetary value) - OPTIMIZED: uses SQL aggregation.
      */
     public double getTotalServiceCredits() {
-        List<CommunityService> allServices = serviceRepository.findAll();
-        return allServices.stream()
-                .mapToDouble(CommunityService::getCreditAmount)
-                .sum();
+        return serviceRepository.getTotalCredits();
     }
 
     /**
-     * Gets total community service hours rendered.
+     * Gets total community service hours rendered - OPTIMIZED: uses SQL aggregation.
      */
     public int getTotalServiceHours() {
-        List<CommunityService> allServices = serviceRepository.findAll();
-        return allServices.stream()
-                .mapToInt(CommunityService::getHoursRendered)
-                .sum();
+        return serviceRepository.getTotalHours();
     }
 
     /**
@@ -222,16 +565,12 @@ public class ReportService {
     }
 
     /**
-     * Gets total service hours for a specific month.
+     * Gets total service hours for a specific month - OPTIMIZED: uses SQL aggregation.
      */
     public int getServiceHoursForMonth(YearMonth yearMonth) {
-        List<CommunityService> allServices = serviceRepository.findAll();
         LocalDate start = yearMonth.atDay(1);
         LocalDate end = yearMonth.atEndOfMonth();
-        return allServices.stream()
-                .filter(s -> !s.getDate().isBefore(start) && !s.getDate().isAfter(end))
-                .mapToInt(CommunityService::getHoursRendered)
-                .sum();
+        return serviceRepository.getHoursByDateRange(start, end);
     }
 
     /**
@@ -267,16 +606,12 @@ public class ReportService {
     }
 
     /**
-     * Gets total monetary equivalent of community service for a month.
+     * Gets total monetary equivalent of community service for a month - OPTIMIZED: uses SQL aggregation.
      */
     public double getServiceCreditsForMonth(YearMonth yearMonth) {
-        List<CommunityService> allServices = serviceRepository.findAll();
         LocalDate start = yearMonth.atDay(1);
         LocalDate end = yearMonth.atEndOfMonth();
-        return allServices.stream()
-                .filter(s -> !s.getDate().isBefore(start) && !s.getDate().isAfter(end))
-                .mapToDouble(CommunityService::getCreditAmount)
-                .sum();
+        return serviceRepository.getCreditsByDateRange(start, end);
     }
 
     /**
