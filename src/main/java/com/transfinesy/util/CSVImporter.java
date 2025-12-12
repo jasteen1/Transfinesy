@@ -10,7 +10,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility class for importing students from CSV file.
+ * Utility class for importing students from CSV files.
+ * 
+ * This class provides functionality to bulk import student records from CSV files.
+ * It parses CSV data, validates student information, and saves records to the database.
+ * 
+ * CSV Format:
+ * Expected format: rfidTag,studID,firstName,lastName,course,yearLevel,section
+ * - First line is treated as header and skipped
+ * - Empty lines are ignored
+ * - Each line represents one student record
+ * 
+ * Key Features:
+ * - Parses CSV files with comma-separated values
+ * - Validates student data before import
+ * - Skips invalid records and continues processing
+ * - Returns count of successfully imported records
+ * - Handles file I/O errors gracefully
+ * 
+ * Validation:
+ * - Student ID must not be empty
+ * - Duplicate student IDs are skipped
+ * - Uses StudentService validation rules
+ * 
+ * Error Handling:
+ * - Catches IOException for file reading errors
+ * - Skips invalid records without stopping import
+ * - Returns import statistics (imported count, skipped count)
+ * 
+ * Usage:
+ * - Call importStudents(csvFilePath, studentService)
+ * - Returns number of successfully imported students
+ * 
+ * @author transFINESy Development Team
  */
 public class CSVImporter {
     

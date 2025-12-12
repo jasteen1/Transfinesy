@@ -3,8 +3,33 @@ package com.transfinesy.model;
 import java.time.LocalDateTime;
 
 /**
- * Represents attendance record for a student at an event.
- * Each record is a student's attendance for a specific event (whole day).
+ * Represents an attendance record for a student at an event.
+ * 
+ * This class models a single attendance record that can represent either:
+ * - A time-in record (when student checks in)
+ * - A time-out record (when student checks out)
+ * 
+ * Key Features:
+ * - Supports AM/PM session separation (prevents overwriting)
+ * - Separate records for TIME_IN and TIME_OUT
+ * - Status tracking (PRESENT, LATE, ABSENT, EXCUSED)
+ * - Minutes late calculation for late arrivals
+ * - Source tracking (RFID scan vs manual entry)
+ * 
+ * Session and Record Type:
+ * - session: "AM", "PM", or null (for legacy records)
+ * - recordType: "TIME_IN", "TIME_OUT", or null (for legacy records)
+ * 
+ * This design allows:
+ * - Separate AM and PM attendance records
+ * - Separate time-in and time-out records
+ * - No data loss when students check in/out multiple times
+ * 
+ * Legacy Records:
+ * - Old records may have null session and recordType
+ * - These are displayed separately in the UI as "Legacy Attendance"
+ * 
+ * @author transFINESy Development Team
  */
 public class Attendance {
     private String attendanceID;

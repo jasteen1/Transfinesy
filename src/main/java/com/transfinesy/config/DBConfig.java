@@ -10,11 +10,30 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * Database configuration class.
- * Uses Spring Boot's DataSource with connection pooling for MUCH better performance.
- * Connection pooling reuses connections instead of creating new ones each time.
+ * Database configuration class for managing database connections.
  * 
- * This fixes the major performance issue where every query created a new database connection.
+ * This class provides database connection management using Spring Boot's DataSource
+ * with connection pooling for optimal performance. Connection pooling reuses existing
+ * connections instead of creating new ones for each query, significantly improving
+ * application performance.
+ * 
+ * Key Features:
+ * - Uses Spring's DataSource for connection pooling
+ * - Provides static method for backward compatibility
+ * - Automatic connection reuse from pool
+ * - Fallback initialization from Spring context
+ * 
+ * Performance Benefits:
+ * - Eliminates connection creation overhead
+ * - Reduces database connection time
+ * - Improves query response times
+ * - Handles concurrent requests efficiently
+ * 
+ * Usage:
+ * - Static method: DBConfig.getConnection() (for repositories)
+ * - Instance method: dbConfig.getConnectionInstance() (for dependency injection)
+ * 
+ * @author transFINESy Development Team
  */
 @Component
 public class DBConfig implements ApplicationContextAware {

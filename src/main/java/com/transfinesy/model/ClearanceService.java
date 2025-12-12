@@ -1,10 +1,27 @@
 package com.transfinesy.model;
 
 /**
- * Service class for checking clearance eligibility.
- * Note: This is a model class, but the actual business logic
- * will be in com.transfinesy.service.ClearanceService.
- * This class is kept here as per the specification.
+ * Model class for checking clearance eligibility.
+ * 
+ * This class provides methods to determine if a student is eligible for clearance
+ * based on their ledger balance. Note that the actual business logic implementation
+ * is in com.transfinesy.service.ClearanceService.
+ * 
+ * Clearance Rules:
+ * - Student is eligible if ledger balance <= 0
+ * - Student is not eligible if ledger balance > 0
+ * 
+ * Clearance Status:
+ * - "CLEARED": Balance <= 0, student is eligible
+ * - "WITH BALANCE": Balance > 0, student has outstanding balance
+ * - "PENDING SERVICE": Special status (not currently used)
+ * 
+ * Usage:
+ * - Called when viewing clearance page
+ * - Used to determine which students can be cleared
+ * - Displays clearance status in UI
+ * 
+ * @author transFINESy Development Team
  */
 public class ClearanceService {
     

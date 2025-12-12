@@ -11,6 +11,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Spring MVC Controller for handling student management web requests.
+ * 
+ * This controller handles all HTTP requests related to student management,
+ * including listing, creating, editing, deleting, and searching students.
+ * 
+ * Routes:
+ * - GET /students - List all students (with search and sort)
+ * - GET /students/new - Show create student form
+ * - GET /students/{id}/edit - Show edit student form
+ * - POST /students - Save new student
+ * - POST /students/{id} - Update existing student
+ * - POST /students/{id}/delete - Delete student
+ * 
+ * Features:
+ * - Advanced search with multiple search types (ID, Name, Course, Year Level, Section, RFID, All Fields)
+ * - Sorting by various fields (last name, first name, ID, course, year level, section)
+ * - Form validation and error handling
+ * - Flash messages for success/error feedback
+ * 
+ * Request Parameters:
+ * - search: Search query string
+ * - searchType: Type of search (Student ID, Name, Course, etc.)
+ * - sortBy: Field to sort by
+ * - sortOrder: Sort direction (asc/desc)
+ * 
+ * @author transFINESy Development Team
+ */
 @Controller
 @RequestMapping("/students")
 public class StudentController {

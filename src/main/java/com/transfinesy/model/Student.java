@@ -1,7 +1,24 @@
 package com.transfinesy.model;
 
 /**
- * Represents a student in the system.
+ * Represents a student in the transFINESy system.
+ * 
+ * This class models a student entity with all relevant information including
+ * personal details (ID, name), academic information (course, year level, section),
+ * and RFID tag for automated attendance tracking.
+ * 
+ * Key Features:
+ * - Unique student ID (studID) serves as primary identifier
+ * - Full name is composed of firstName and lastName
+ * - Academic classification via course, yearLevel, and section
+ * - Optional RFID tag for automated check-in/check-out
+ * 
+ * Usage:
+ * - Used throughout the system for student management
+ * - Referenced in attendance, fines, payments, and ledger records
+ * - Supports filtering and searching by various criteria
+ * 
+ * @author transFINESy Development Team
  */
 public class Student {
     private String studID;

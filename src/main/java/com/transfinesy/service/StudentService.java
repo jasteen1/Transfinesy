@@ -8,7 +8,32 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * Service layer for Student operations.
+ * Service layer for Student business logic operations.
+ * 
+ * This class encapsulates all business logic related to student management.
+ * It acts as an intermediary between controllers and repositories, providing
+ * validation, data transformation, and business rule enforcement.
+ * 
+ * Key Responsibilities:
+ * - Student CRUD operations with validation
+ * - Student search with multiple criteria
+ * - Data validation (ID format, year level, course, name format)
+ * - Sorting and filtering operations
+ * - Retrieving distinct values for filters
+ * 
+ * Validation Rules:
+ * - Student ID: Must match pattern YYYYMXXXX (e.g., 2024M0001)
+ * - Year Level: Must be 1, 2, 3, or 4
+ * - Course: Letters only
+ * - First/Last Name: Letters and spaces only
+ * - Section: Single letter (A-Z)
+ * 
+ * Search Features:
+ * - Search by ID, name, course, year level, section, RFID
+ * - Full name search (handles "firstname lastname" and "lastname firstname")
+ * - Partial matching for RFID tags
+ * 
+ * @author transFINESy Development Team
  */
 @Service
 public class StudentService {

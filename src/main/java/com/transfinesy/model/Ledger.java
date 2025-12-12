@@ -8,7 +8,33 @@ import java.util.stream.Collectors;
 
 /**
  * Represents the financial ledger for a single student.
- * Aggregates all transactions (fines, payments, service credits).
+ * 
+ * This class aggregates all financial transactions (fines, payments, service credits)
+ * for a student and calculates their current balance.
+ * 
+ * Key Features:
+ * - Maintains a list of all transactions
+ * - Calculates opening and closing balances
+ * - Tracks totals: fines, payments, service credits
+ * - Provides transaction history filtering
+ * 
+ * Balance Calculation:
+ * - Formula: Balance = Opening Balance + Total Fines - Total Payments - Total Service Credits
+ * - Fines increase balance (debt)
+ * - Payments and credits decrease balance (reduce debt)
+ * - Balance can never be negative (minimum 0)
+ * 
+ * Transaction Types:
+ * - Fine: Increases balance (positive contribution)
+ * - Payment: Decreases balance (negative contribution)
+ * - Service Credit: Decreases balance (negative contribution)
+ * 
+ * Usage:
+ * - Generated on-demand when viewing student ledger
+ * - Used for clearance eligibility checks
+ * - Provides complete financial history
+ * 
+ * @author transFINESy Development Team
  */
 public class Ledger {
     private String studID;

@@ -4,7 +4,32 @@ import java.util.NoSuchElementException;
 
 /**
  * Generic Queue data structure implementation (FIFO - First In First Out).
- * Used for processing attendance scans in order.
+ * 
+ * This class provides a custom queue implementation using a linked list structure.
+ * It follows the FIFO principle where the first element added is the first to be removed.
+ * 
+ * Key Features:
+ * - Generic type support (works with any data type)
+ * - Linked list-based implementation
+ * - O(1) enqueue and dequeue operations
+ * - Size tracking
+ * - Empty check functionality
+ * 
+ * Operations:
+ * - enqueue(T item): Add element to rear of queue
+ * - dequeue(): Remove and return element from front
+ * - peek(): View front element without removing
+ * - isEmpty(): Check if queue is empty
+ * - size(): Get number of elements
+ * - clear(): Remove all elements
+ * 
+ * Use Cases:
+ * - Processing attendance scans in order
+ * - Managing request queues
+ * - Any scenario requiring FIFO processing
+ * 
+ * @param <T> The type of elements stored in the queue
+ * @author transFINESy Development Team
  */
 public class Queue<T> {
     private Node<T> front;

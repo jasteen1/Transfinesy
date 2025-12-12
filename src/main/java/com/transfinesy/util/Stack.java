@@ -4,7 +4,33 @@ import java.util.NoSuchElementException;
 
 /**
  * Generic Stack data structure implementation (LIFO - Last In First Out).
- * Used for managing transaction history and viewing recent transactions.
+ * 
+ * This class provides a custom stack implementation using a linked list structure.
+ * It follows the LIFO principle where the last element added is the first to be removed.
+ * 
+ * Key Features:
+ * - Generic type support (works with any data type)
+ * - Linked list-based implementation
+ * - O(1) push and pop operations
+ * - Size tracking
+ * - Empty check functionality
+ * 
+ * Operations:
+ * - push(T item): Add element to top of stack
+ * - pop(): Remove and return element from top
+ * - peek(): View top element without removing
+ * - isEmpty(): Check if stack is empty
+ * - size(): Get number of elements
+ * - clear(): Remove all elements
+ * 
+ * Use Cases:
+ * - Managing transaction history
+ * - Viewing recent transactions
+ * - Undo/redo functionality
+ * - Expression evaluation
+ * 
+ * @param <T> The type of elements stored in the stack
+ * @author transFINESy Development Team
  */
 public class Stack<T> {
     private Node<T> top;

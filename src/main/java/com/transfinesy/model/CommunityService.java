@@ -3,7 +3,29 @@ package com.transfinesy.model;
 import java.time.LocalDate;
 
 /**
- * Represents a community service record that can be converted to a credit transaction.
+ * Represents a community service record in the system.
+ * 
+ * This class models community service hours rendered by students, which can be
+ * converted to monetary credits that reduce their outstanding balance.
+ * 
+ * Key Features:
+ * - Tracks hours rendered (hoursRendered)
+ * - Converts hours to credit amount (creditAmount)
+ * - Conversion rate: Typically 1 hour = ₱50 (configurable)
+ * - Includes description of service performed
+ * - Linked to a specific student (studID)
+ * 
+ * Credit Conversion:
+ * - Hours are converted to credits when recorded
+ * - Credits are applied to student ledger as negative transactions
+ * - Formula: creditAmount = hoursRendered × hourlyRate
+ * 
+ * Usage:
+ * - Students can render community service to offset fines
+ * - Service credits reduce outstanding balance
+ * - Tracked separately from regular payments
+ * 
+ * @author transFINESy Development Team
  */
 public class CommunityService {
     private String serviceID;

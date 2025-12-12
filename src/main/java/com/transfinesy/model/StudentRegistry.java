@@ -6,7 +6,21 @@ import java.util.stream.Collectors;
 
 /**
  * Registry that maintains a list of all students.
- * Used for dashboards and clearance operations.
+ * 
+ * This class provides a centralized collection of all students in the system.
+ * It is used for dashboards, clearance operations, and bulk operations.
+ * 
+ * Key Features:
+ * - Maintains a list of all students
+ * - Provides methods to filter students (by clearance eligibility, balance)
+ * - Supports adding and removing students
+ * 
+ * Usage:
+ * - Used in dashboard to get student counts
+ * - Used in clearance operations to list students
+ * - Note: Actual implementation may delegate to StudentService
+ * 
+ * @author transFINESy Development Team
  */
 public class StudentRegistry {
     private List<Student> students;

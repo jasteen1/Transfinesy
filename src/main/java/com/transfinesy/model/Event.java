@@ -5,6 +5,29 @@ import java.time.LocalTime;
 
 /**
  * Represents a school event where attendance is checked.
+ * 
+ * This class models an event entity that can have morning (AM) and/or afternoon (PM) sessions.
+ * Each event can have separate time windows for time-in and time-out for both sessions.
+ * Events are associated with fines for absent and late students.
+ * 
+ * Key Features:
+ * - Event identification (ID, name, date)
+ * - Academic period tracking (semester, school year)
+ * - Dual session support (AM/PM) with separate time windows
+ * - Fine configuration (amounts for absent/late students)
+ * - Time window management (start/stop times for time-in/time-out)
+ * 
+ * Time Windows:
+ * - Legacy fields: amTimeIn, amTimeOut, pmTimeIn, pmTimeOut (for backward compatibility)
+ * - New fields: timeInStartAM, timeInStopAM, timeOutStartAM, timeOutStopAM (morning)
+ * - New fields: timeInStartPM, timeInStopPM, timeOutStartPM, timeOutStopPM (afternoon)
+ * 
+ * Session Types:
+ * - MORNING_ONLY: Only morning session
+ * - AFTERNOON_ONLY: Only afternoon session
+ * - BOTH: Both morning and afternoon sessions
+ * 
+ * @author transFINESy Development Team
  */
 public class Event {
     private String eventID;

@@ -4,6 +4,32 @@ import java.time.LocalDate;
 
 /**
  * Abstract base class for all financial transactions in the ledger.
+ * 
+ * This class provides the common structure for all financial transactions
+ * in the system. It is extended by Fine and Payment classes.
+ * 
+ * Key Features:
+ * - Unique transaction ID for tracking
+ * - Linked to a student (studID)
+ * - Amount and date information
+ * - Abstract method for signed amount calculation
+ * 
+ * Signed Amount:
+ * - Different transaction types have different signs:
+ *   - Fines: Positive (increase debt)
+ *   - Payments: Negative (decrease debt)
+ *   - Service Credits: Negative (decrease debt)
+ * 
+ * Subclasses:
+ * - Fine: Represents fines issued to students
+ * - Payment: Represents payments made by students
+ * 
+ * Usage:
+ * - All transactions are stored in student ledgers
+ * - Used for balance calculations
+ * - Provides transaction history
+ * 
+ * @author transFINESy Development Team
  */
 public abstract class Transaction {
     protected String transactionID;

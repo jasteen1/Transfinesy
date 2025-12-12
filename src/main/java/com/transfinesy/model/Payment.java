@@ -3,8 +3,27 @@ package com.transfinesy.model;
 import java.time.LocalDate;
 
 /**
- * Represents a payment transaction (extends Transaction).
- * Payments have positive signed amounts.
+ * Represents a payment transaction in the system.
+ * 
+ * This class extends Transaction and models a payment made by a student.
+ * Payments reduce the student's outstanding balance.
+ * 
+ * Key Features:
+ * - Linked to a student (studID)
+ * - Has a unique payment ID and transaction ID
+ * - Includes OR (Official Receipt) number for tracking
+ * - Amount is stored as positive value
+ * - getSignedAmount() returns negative (payments reduce debt)
+ * 
+ * Ledger Calculation:
+ * - Payments decrease the student's outstanding balance
+ * - Formula: Balance = Total Fines - Total Payments - Total Credits
+ * 
+ * Service Credit Payments:
+ * - Payments with transaction ID starting with "SVC-TXN-" are service credits
+ * - These are converted from community service hours
+ * 
+ * @author transFINESy Development Team
  */
 public class Payment extends Transaction {
     private String paymentID;

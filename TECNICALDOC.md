@@ -472,6 +472,18 @@ classDiagram
         +getFullName() String
         +getStudID() String
         +setStudID(String)
+        +getFirstName() String
+        +setFirstName(String)
+        +getLastName() String
+        +setLastName(String)
+        +getCourse() String
+        +setCourse(String)
+        +getYearLevel() String
+        +setYearLevel(String)
+        +getSection() String
+        +setSection(String)
+        +getRfidTag() String
+        +setRfidTag(String)
     }
 
     class Event {
@@ -480,10 +492,29 @@ classDiagram
         -LocalDate eventDate
         -Integer semester
         -String schoolYear
+        -LocalTime amTimeIn
+        -LocalTime amTimeOut
+        -LocalTime pmTimeIn
+        -LocalTime pmTimeOut
         -AttendanceSession sessionType
         -LocalTime timeInStartAM
         -LocalTime timeInStopAM
+        -LocalTime timeOutStartAM
+        -LocalTime timeOutStopAM
+        -LocalTime timeInStartPM
+        -LocalTime timeInStopPM
+        -LocalTime timeOutStartPM
+        -LocalTime timeOutStopPM
+        -Double fineAmountAbsent
+        -Double fineAmountLate
+        +getLastTimeOut() LocalTime
         +getRelevantTimeIn(LocalDateTime) LocalTime
+        +getEventID() String
+        +setEventID(String)
+        +getEventName() String
+        +setEventName(String)
+        +getEventDate() LocalDate
+        +setEventDate(LocalDate)
     }
 
     class Attendance {
@@ -495,6 +526,28 @@ classDiagram
         -LocalDateTime checkInTime
         -LocalDateTime checkOutTime
         -String scanSource
+        -String session
+        -String recordType
+        +getAttendanceID() String
+        +setAttendanceID(String)
+        +getStudID() String
+        +setStudID(String)
+        +getEventID() String
+        +setEventID(String)
+        +getStatus() AttendanceStatus
+        +setStatus(AttendanceStatus)
+        +getMinutesLate() int
+        +setMinutesLate(int)
+        +getCheckInTime() LocalDateTime
+        +setCheckInTime(LocalDateTime)
+        +getCheckOutTime() LocalDateTime
+        +setCheckOutTime(LocalDateTime)
+        +getScanSource() String
+        +setScanSource(String)
+        +getSession() String
+        +setSession(String)
+        +getRecordType() String
+        +setRecordType(String)
     }
 
     class Transaction {
@@ -504,6 +557,14 @@ classDiagram
         #double amount
         #LocalDate date
         +getSignedAmount()* double
+        +getTransactionID() String
+        +setTransactionID(String)
+        +getStudID() String
+        +setStudID(String)
+        +getAmount() double
+        +setAmount(double)
+        +getDate() LocalDate
+        +setDate(LocalDate)
     }
 
     class Fine {
@@ -511,12 +572,22 @@ classDiagram
         -String eventID
         -double fineAmount
         +getSignedAmount() double
+        +getFineID() String
+        +setFineID(String)
+        +getEventID() String
+        +setEventID(String)
+        +getFineAmount() double
+        +setFineAmount(double)
     }
 
     class Payment {
         -String paymentID
         -String orNumber
         +getSignedAmount() double
+        +getPaymentID() String
+        +setPaymentID(String)
+        +getOrNumber() String
+        +setOrNumber(String)
     }
 
     class CommunityService {
@@ -526,6 +597,18 @@ classDiagram
         -double creditAmount
         -LocalDate date
         -String description
+        +getServiceID() String
+        +setServiceID(String)
+        +getStudID() String
+        +setStudID(String)
+        +getHoursRendered() int
+        +setHoursRendered(int)
+        +getCreditAmount() double
+        +setCreditAmount(double)
+        +getDate() LocalDate
+        +setDate(LocalDate)
+        +getDescription() String
+        +setDescription(String)
     }
 
     class Ledger {
@@ -533,10 +616,47 @@ classDiagram
         -List~Transaction~ transactions
         -double openingBalance
         -double closingBalance
+        -LocalDateTime lastUpdated
         -double totalFines
         -double totalPayments
+        -double totalServiceCredits
         +addTransaction(Transaction)
         +computeBalance() double
+        +getBalance() double
+        +getTotalFines() double
+        +getTotalPayments() double
+        +getTotalCredits() double
+        +updateClosingBalance()
+        +filterTransactionsByDate(LocalDate, LocalDate) List~Transaction~
+        +getTransactionHistory() List~Transaction~
+        +getStudID() String
+        +setStudID(String)
+        +getTransactions() List~Transaction~
+        +setTransactions(List~Transaction~)
+        +getOpeningBalance() double
+        +setOpeningBalance(double)
+        +getClosingBalance() double
+        +setClosingBalance(double)
+        +getLastUpdated() LocalDateTime
+        +setLastUpdated(LocalDateTime)
+        +getTotalServiceCredits() double
+        +setTotalServiceCredits(double)
+    }
+
+    class ClearanceService {
+        +isEligibleForClearance(Student, Ledger) boolean
+        +getClearanceStatus(Student, Ledger) String
+    }
+
+    class StudentRegistry {
+        -List~Student~ students
+        +getAllStudents() List~Student~
+        +getStudentsEligibleForClearance(ClearanceService) List~Student~
+        +getStudentsWithBalance(ClearanceService) List~Student~
+        +addStudent(Student)
+        +removeStudent(String)
+        +getStudents() List~Student~
+        +setStudents(List~Student~)
     }
 
     class AttendanceStatus {
@@ -562,6 +682,16 @@ classDiagram
         +save(Student)
         +update(Student)
         +delete(String)
+        +findByCourse(String) List~Student~
+        +findByYearLevel(String) List~Student~
+        +findBySection(String) List~Student~
+        +findByRFID(String) Student
+        +searchByName(String) List~Student~
+        +searchByID(String) List~Student~
+        +search(String) List~Student~
+        +getDistinctYearLevels() List~String~
+        +getDistinctSections() List~String~
+        +getDistinctCourses() List~String~
     }
 
     class EventRepository {
@@ -569,6 +699,8 @@ classDiagram
         +findAll() List~Event~
         +findById(String) Event
         +save(Event)
+        +update(Event)
+        +delete(String)
     }
 
     class AttendanceRepository {
@@ -576,6 +708,47 @@ classDiagram
         +findAll() List~Attendance~
         +findByEvent(String) List~Attendance~
         +findByStudent(String) List~Attendance~
+        +save(Attendance)
+        +update(Attendance)
+        +findByStudentEventSessionAndType(String, String, String, String) Attendance
+        +countUniqueStudentsByStatusFiltered(String, String, String, String) Map~String,Long~
+    }
+
+    class FineRepository {
+        <<interface>>
+        +findAll() List~Fine~
+        +findById(String) Fine
+        +findByStudent(String) List~Fine~
+        +findByEvent(String) List~Fine~
+        +save(Fine)
+        +update(Fine)
+        +delete(String)
+    }
+
+    class PaymentRepository {
+        <<interface>>
+        +findAll() List~Payment~
+        +findById(String) Payment
+        +findByStudent(String) List~Payment~
+        +save(Payment)
+        +update(Payment)
+        +delete(String)
+        +getTotalSum() double
+        +getSumByDateRange(LocalDate, LocalDate) double
+    }
+
+    class CommunityServiceRepository {
+        <<interface>>
+        +findAll() List~CommunityService~
+        +findById(String) CommunityService
+        +findByStudent(String) List~CommunityService~
+        +save(CommunityService)
+        +update(CommunityService)
+        +delete(String)
+        +getTotalHours() int
+        +getTotalCredits() double
+        +getTotalHoursFiltered(String, String, String) int
+        +getTotalCreditsFiltered(String, String, String) double
     }
 
     %% Repository Implementations
@@ -583,23 +756,101 @@ classDiagram
         +findAll() List~Student~
         +findById(String) Student
         +save(Student)
+        +update(Student)
+        +delete(String)
+        +findByCourse(String) List~Student~
+        +findByYearLevel(String) List~Student~
+        +findBySection(String) List~Student~
+        +findByRFID(String) Student
+        +searchByName(String) List~Student~
+        +searchByID(String) List~Student~
+        +search(String) List~Student~
+        +getDistinctYearLevels() List~String~
+        +getDistinctSections() List~String~
+        +getDistinctCourses() List~String~
     }
 
     class EventRepositoryImpl {
         +findAll() List~Event~
         +findById(String) Event
+        +save(Event)
+        +update(Event)
+        +delete(String)
     }
 
     class AttendanceRepositoryImpl {
         +findAll() List~Attendance~
         +findByEvent(String) List~Attendance~
+        +findByStudent(String) List~Attendance~
+        +save(Attendance)
+        +update(Attendance)
+        +findByStudentEventSessionAndType(String, String, String, String) Attendance
+        +countUniqueStudentsByStatusFiltered(String, String, String, String) Map~String,Long~
+    }
+
+    class FineRepositoryImpl {
+        +findAll() List~Fine~
+        +findById(String) Fine
+        +findByStudent(String) List~Fine~
+        +findByEvent(String) List~Fine~
+        +save(Fine)
+        +update(Fine)
+        +delete(String)
+    }
+
+    class PaymentRepositoryImpl {
+        +findAll() List~Payment~
+        +findById(String) Payment
+        +findByStudent(String) List~Payment~
+        +save(Payment)
+        +update(Payment)
+        +delete(String)
+        +getTotalSum() double
+        +getSumByDateRange(LocalDate, LocalDate) double
+    }
+
+    class CommunityServiceRepositoryImpl {
+        +findAll() List~CommunityService~
+        +findById(String) CommunityService
+        +findByStudent(String) List~CommunityService~
+        +save(CommunityService)
+        +update(CommunityService)
+        +delete(String)
+        +getTotalHours() int
+        +getTotalCredits() double
+        +getTotalHoursFiltered(String, String, String) int
+        +getTotalCreditsFiltered(String, String, String) double
     }
 
     %% Service Classes
     class StudentService {
         -StudentRepository repository
         +getAllStudents() List~Student~
-        +sortStudents(List, String, String) List~Student~
+        +getStudentById(String) Student
+        +addStudent(Student)
+        +updateStudent(Student)
+        +deleteStudent(String)
+        +searchStudents(String) List~Student~
+        +searchByNameOnly(String) List~Student~
+        +searchByStudentID(String) List~Student~
+        +searchByCourse(String) List~Student~
+        +searchByYearLevel(String) List~Student~
+        +searchBySection(String) List~Student~
+        +searchByRFID(String) List~Student~
+        +sortStudents(List~Student~, String, String) List~Student~
+        +getDistinctCourses() List~String~
+        +getDistinctYearLevels() List~String~
+        +getDistinctSections() List~String~
+    }
+
+    class EventService {
+        -EventRepository repository
+        +getAllEvents() List~Event~
+        +getEventById(String) Event
+        +saveEvent(Event)
+        +updateEvent(Event)
+        +deleteEvent(String)
+        +validateEvent(Event)
     }
 
     class AttendanceService {
@@ -607,22 +858,76 @@ classDiagram
         -EventRepository eventRepository
         -Queue~AttendanceScanRequest~ scanQueue
         +checkInStudent(String, String) Attendance
+        +checkInStudentWithWindow(String, String, String, String, boolean) Attendance
         +scanRFIDWithWindow(String, Event, String, boolean) Attendance
+        +getAttendanceCountsByStatus(String) Map~String,Long~
+        +getAttendanceCountsByStatusFiltered(String, String, String, String) Map~String,Long~
+        +findAttendanceByStudentEventSessionAndType(String, String, String, String) Attendance
     }
 
     class FineService {
         -FineRepository repository
         -LedgerService ledgerService
         +calculateFineAmount(AttendanceStatus, int) double
+        +calculateFineAmount(AttendanceStatus, int, Event) double
         +createFineFromAttendance(Attendance, String) Fine
+        +createFineFromAttendance(Attendance, String, Event) Fine
+        +saveFine(Fine)
+        +generateFinesFromAttendances(List~Attendance~, String)
+        +generateFinesFromAttendances(List~Attendance~, String, Event)
+        +getFinesByStudent(String) List~Fine~
+        +getFinesByEvent(String) List~Fine~
+    }
+
+    class PaymentService {
+        -PaymentRepository repository
+        -LedgerService ledgerService
+        +recordPayment(String, double, String, LocalDate) Payment
+        +getPaymentsByStudent(String) List~Payment~
+        +getAllPayments() List~Payment~
+    }
+
+    class CommunityServiceService {
+        -CommunityServiceRepository repository
+        -LedgerService ledgerService
+        +recordCommunityService(String, int, LocalDate) CommunityService
+        +recordCommunityService(String, int, LocalDate, String) CommunityService
+        +calculateCreditAmount(int) double
+        +getServiceRecordsByStudent(String) List~CommunityService~
     }
 
     class LedgerService {
         -FineRepository fineRepository
         -PaymentRepository paymentRepository
+        -CommunityServiceRepository serviceRepository
         -Stack~Transaction~ recentTransactions
         +getLedgerForStudent(String) Ledger
+        +addTransactionToLedger(String, Transaction)
         +getRecentTransactions(int) List~Transaction~
+    }
+
+    class ReportService {
+        -FineRepository fineRepository
+        -PaymentRepository paymentRepository
+        -StudentRepository studentRepository
+        -CommunityServiceRepository serviceRepository
+        +getTotalFinesIssued() double
+        +getTotalPayments() double
+        +getTotalServiceCredits() double
+        +calculateOutstandingBalance(double, double, double) double
+        +getTotalFinesIssuedFiltered(String, String, String) double
+        +getTotalPaymentsFiltered(String, String, String) double
+        +getTotalServiceCreditsFiltered(String, String, String) double
+        +getTotalServiceHours() int
+        +getTotalServiceHoursFiltered(String, String, String) int
+        +getServiceStudentCount() long
+        +getServiceStudentCountFiltered(String, String, String) long
+    }
+
+    class ClearanceService {
+        -LedgerService ledgerService
+        +isEligibleForClearance(String) boolean
+        +getClearanceStatus(String) String
     }
 
     %% Relationships
@@ -635,17 +940,37 @@ classDiagram
     Fine --> Attendance : created from
     Ledger --> Transaction : contains
     Event --> AttendanceSession : uses
+    CommunityService --> Student : references
+    ClearanceService --> Student : uses
+    ClearanceService --> Ledger : uses
+    StudentRegistry --> Student : contains
+    StudentRegistry --> ClearanceService : uses
     
     StudentRepositoryImpl ..|> StudentRepository : implements
     EventRepositoryImpl ..|> EventRepository : implements
     AttendanceRepositoryImpl ..|> AttendanceRepository : implements
+    FineRepositoryImpl ..|> FineRepository : implements
+    PaymentRepositoryImpl ..|> PaymentRepository : implements
+    CommunityServiceRepositoryImpl ..|> CommunityServiceRepository : implements
     
     StudentService --> StudentRepository : uses
+    EventService --> EventRepository : uses
     AttendanceService --> AttendanceRepository : uses
     AttendanceService --> EventRepository : uses
     FineService --> FineRepository : uses
+    FineService --> LedgerService : uses
+    PaymentService --> PaymentRepository : uses
+    PaymentService --> LedgerService : uses
+    CommunityServiceService --> CommunityServiceRepository : uses
+    CommunityServiceService --> LedgerService : uses
     LedgerService --> FineRepository : uses
     LedgerService --> PaymentRepository : uses
+    LedgerService --> CommunityServiceRepository : uses
+    ReportService --> FineRepository : uses
+    ReportService --> PaymentRepository : uses
+    ReportService --> StudentRepository : uses
+    ReportService --> CommunityServiceRepository : uses
+    ClearanceService --> LedgerService : uses
 ```
 
 ### Class Diagram Notes:
@@ -653,9 +978,17 @@ classDiagram
 - **Abstract Class:** `Transaction` (cannot be instantiated)
 - **Inheritance:** `Fine` and `Payment` extend `Transaction`
 - **Interfaces:** All repositories are interfaces (abstraction)
-- **Composition:** `Ledger` contains `List<Transaction>`
-- **Associations:** `Attendance` references `Student` and `Event`
+- **Composition:** `Ledger` contains `List<Transaction>`, `StudentRegistry` contains `List<Student>`
+- **Associations:** 
+  - `Attendance` references `Student` and `Event`
+  - `Fine` references `Event` and is created from `Attendance`
+  - `CommunityService` references `Student`
+  - `ClearanceService` uses `Student` and `Ledger`
 - **Enumerations:** `AttendanceStatus`, `AttendanceSession`
+- **Model Classes:** All model classes include complete field listings and key methods
+- **Repository Pattern:** All repositories have interface and implementation pairs
+- **Service Layer:** Services use repositories and coordinate business logic
+- **Complete Coverage:** All classes, fields, and relationships are documented
 
 ---
 

@@ -4,7 +4,23 @@ import com.transfinesy.model.Student;
 import java.util.List;
 
 /**
- * Repository interface for Student operations.
+ * Repository interface for Student data access operations.
+ * 
+ * This interface defines the contract for all student-related database operations.
+ * It follows the Repository pattern, separating data access logic from business logic.
+ * 
+ * Key Operations:
+ * - CRUD operations (Create, Read, Update, Delete)
+ * - Search operations (by name, ID, RFID, course, year level, section)
+ * - Filter operations (by course, year level, section)
+ * - Distinct value retrieval (for dropdown filters)
+ * 
+ * Implementation:
+ * - StudentRepositoryImpl provides JDBC-based implementation
+ * - Uses connection pooling via DBConfig for performance
+ * - All methods handle SQL exceptions internally
+ * 
+ * @author transFINESy Development Team
  */
 public interface StudentRepository {
     List<Student> findAll();

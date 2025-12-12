@@ -21,6 +21,34 @@ import java.util.stream.Collectors;
 
 /**
  * Service layer for generating reports and transparency dashboards.
+ * 
+ * This service provides methods for calculating various financial and statistical
+ * summaries used in the dashboard and reports. It aggregates data from fines,
+ * payments, community service, and attendance records.
+ * 
+ * Key Features:
+ * - Financial calculations (total fines, payments, service credits, outstanding balance)
+ * - Monthly and semester collection summaries
+ * - Filtered statistics (by course, year level, section)
+ * - Attendance counts by status
+ * - Community service totals
+ * 
+ * Outstanding Balance Calculation:
+ * - Formula: Outstanding Balance = Total Fines - Total Payments - Total Service Credits
+ * - Returns 0 if result is negative (overpaid/over-credited)
+ * - Never returns negative values
+ * 
+ * Performance:
+ * - Uses SQL aggregation (SUM, COUNT) for optimal performance
+ * - Minimizes data transfer from database
+ * - Filtered queries reduce processing overhead
+ * 
+ * Filtering:
+ * - All methods support filtering by course, year level, section
+ * - Filters are applied at SQL level for efficiency
+ * - Uses JOIN with students table for filtering
+ * 
+ * @author transFINESy Development Team
  */
 @Service
 public class ReportService {

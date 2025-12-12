@@ -15,6 +15,42 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Spring MVC Controller for handling dashboard page requests.
+ * 
+ * This controller manages the main dashboard page which displays:
+ * - Financial Summary: Total fines, payments, service credits, outstanding balance
+ * - Attendance Summary: Present, late, absent counts
+ * - Community Service Summary: Total hours, credits, student count
+ * 
+ * Key Features:
+ * - Independent filters for each section (financial, attendance, service)
+ * - Real-time statistics from database
+ * - Filtered views by course, year level, section, event
+ * - Outstanding balance calculation (never negative, minimum 0)
+ * 
+ * Routes:
+ * - GET /dashboard - Display dashboard with all summaries
+ * 
+ * Filter Parameters:
+ * Financial Section:
+ * - financialCourse, financialYearLevel, financialSection
+ * 
+ * Attendance Section:
+ * - attendanceEvent, attendanceCourse, attendanceYearLevel, attendanceSection
+ * 
+ * Community Service Section:
+ * - serviceCourse, serviceYearLevel, serviceSection
+ * 
+ * Data Flow:
+ * 1. Receives filter parameters from request
+ * 2. Calls appropriate service methods with filters
+ * 3. Aggregates data from multiple services
+ * 4. Adds data to model for Thymeleaf template
+ * 5. Returns dashboard view name
+ * 
+ * @author transFINESy Development Team
+ */
 @Controller
 @RequestMapping("/dashboard")
 public class DashboardController {

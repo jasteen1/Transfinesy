@@ -8,7 +8,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * JDBC implementation of StudentRepository.
+ * JDBC implementation of StudentRepository interface.
+ * 
+ * This class provides the concrete implementation of all student data access operations
+ * using JDBC and SQL queries. It uses connection pooling via DBConfig for optimal performance.
+ * 
+ * Key Features:
+ * - CRUD operations for student records
+ * - Advanced search with full name support (handles "firstname lastname" and "lastname firstname")
+ * - RFID tag lookup and partial matching
+ * - Filtering by course, year level, section
+ * - Optimized SQL queries for distinct values
+ * 
+ * Database Table:
+ * - Table: students
+ * - Columns: stud_id (PK), first_name, last_name, course, year_level, section, rfid_tag
+ * 
+ * Performance:
+ * - Uses PreparedStatement for parameterized queries (prevents SQL injection)
+ * - Uses connection pooling (reuses connections)
+ * - Optimized SELECT queries with proper indexing
+ * 
+ * Error Handling:
+ * - SQL exceptions are caught and printed to console
+ * - Methods return null or empty lists on error
+ * 
+ * @author transFINESy Development Team
  */
 public class StudentRepositoryImpl implements StudentRepository {
 
