@@ -432,13 +432,15 @@ public class ReportService {
 
     /**
      * Calculates outstanding balance: Total Fines - Total Payments - Total Service Credits
+     * Returns 0 if the result is negative (overpaid/over-credited).
      * @param totalFines Total fines issued
      * @param totalPayments Total payments collected
      * @param totalServiceCredits Total service credit value
-     * @return Outstanding balance
+     * @return Outstanding balance (never negative, minimum 0)
      */
     public double calculateOutstandingBalance(double totalFines, double totalPayments, double totalServiceCredits) {
-        return totalFines - totalPayments - totalServiceCredits;
+        double balance = totalFines - totalPayments - totalServiceCredits;
+        return Math.max(0.0, balance); // Return 0 if balance is negative
     }
     
     /**

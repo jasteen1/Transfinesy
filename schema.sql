@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Dec 12, 2025 at 09:56 AM
+-- Generation Time: Dec 12, 2025 at 10:18 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -40,18 +40,6 @@ CREATE TABLE `attendance` (
   `record_type` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `attendance`
---
-
-INSERT INTO `attendance` (`attendance_id`, `stud_id`, `event_id`, `status`, `minutes_late`, `scan_source`, `check_in_time`, `check_out_time`, `session`, `record_type`) VALUES
-('ATT-08520921', '2024M1136', 'EVT-9E24A2921', 'PRESENT', 0, 'RFID', '2025-11-27 16:00:02', NULL, NULL, NULL),
-('ATT-29C54FFC', '2024M0792', 'EVT-9E24A2921', 'PRESENT', 0, 'RFID', '2025-11-27 17:29:35', NULL, NULL, NULL),
-('ATT-94A46C29', '2024M1136', 'EVT-9E24A2921', 'PRESENT', 0, 'RFID', '2025-11-27 16:20:03', NULL, NULL, NULL),
-('ATT-9A77C89C', '2024M0792', 'EVT-9E24A2921', 'PRESENT', 0, 'RFID', '2025-11-27 16:32:09', NULL, NULL, NULL),
-('ATT-ADD052F1', '2024M1136', 'EVT-9E24A2921', 'PRESENT', 0, 'RFID', '2025-11-27 16:30:53', NULL, NULL, NULL),
-('ATT-D5FE6348', '2024M1136', 'EVT-9E24A2921', 'PRESENT', 0, 'RFID', '2025-11-27 17:29:53', NULL, NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -66,14 +54,6 @@ CREATE TABLE `community_service` (
   `date` date NOT NULL,
   `description` varchar(500) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `community_service`
---
-
-INSERT INTO `community_service` (`service_id`, `stud_id`, `hours_rendered`, `credit_amount`, `date`, `description`) VALUES
-('SVC-72DF0922', '2023M0482', 1, 50.00, '2025-11-27', NULL),
-('SVC-BEB49BFC', '2023M0482', 1, 50.00, '2025-11-27', NULL);
 
 -- --------------------------------------------------------
 
@@ -103,16 +83,6 @@ CREATE TABLE `events` (
   `fine_amount_absent` decimal(10,2) DEFAULT NULL,
   `fine_amount_late` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `events`
---
-
-INSERT INTO `events` (`event_id`, `event_name`, `event_date`, `am_time_in`, `am_time_out`, `pm_time_in`, `pm_time_out`, `semester`, `school_year`, `session_type`, `time_in_start_am`, `time_in_stop_am`, `time_out_start_am`, `time_out_stop_am`, `time_in_start_pm`, `time_in_stop_pm`, `time_out_start_pm`, `time_out_stop_pm`, `fine_amount_absent`, `fine_amount_late`) VALUES
-('EVT-58C89B63', 'Test Event', '2025-12-12', NULL, NULL, NULL, NULL, 1, '2025-2026', 'MORNING_ONLY', '16:39:00', '16:39:00', '16:39:00', '16:39:00', NULL, NULL, NULL, NULL, 100.00, 10000.00),
-('EVT-7765B83D', 'Tiringbanay', '2025-12-04', NULL, NULL, NULL, NULL, 1, '2025-2026', 'MORNING_ONLY', '00:39:00', '00:39:00', '00:39:00', '00:39:00', NULL, NULL, NULL, NULL, NULL, NULL),
-('EVT-9E24A2921', 'Tiringbanay', '2025-11-27', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-('EVT-B3ED9FCD', 'sdASD', '2024-11-18', NULL, NULL, NULL, NULL, 1, '2025-2026', 'MORNING_ONLY', '16:10:00', '16:10:00', '16:10:00', '16:10:00', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
